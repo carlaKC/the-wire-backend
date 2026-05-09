@@ -242,10 +242,25 @@ func TestMapleClassifierClassifyDocumentReturnsParsedHeuristics(t *testing.T) {
 }
 
 func TestMapleClassifierClassifyDocumentRepairsInvalidJSON(t *testing.T) {
+	// Mimics the real production bug: first response is mostly-valid JSON
+	// missing one quote on an explanation field. parseDocumentHeuristics
+	// rejects it, ClassifyDocument issues a schema-aware repair, the model
+	// returns valid heuristics on the second try.
+	brokenFirstResponse := `{
+		"heuristics": [
+			{"name":"consistency","score":"medium","explanation":"ok"},
+			{"name":"references","score":"low","explanation": No verifiable references."}
+		]
+	}`
 	completer := &recordingChatCompleter{
 		contents: []string{
-			`not json at all`,
-			`{"heuristics":[{"name":"consistency","score":"high","explanation":"ok"}]}`,
+			brokenFirstResponse,
+			`{"heuristics":[
+				{"name":"consistency","score":"medium","explanation":"ok"},
+				{"name":"references","score":"low","explanation":"no verifiable references"},
+				{"name":"emotive_language","score":"low","explanation":"calm"},
+				{"name":"ideology_or_incentives","score":"low","explanation":"none"}
+			]}`,
 		},
 	}
 	classifier := mapleClassifier{model: "doc-model", client: completer}
@@ -254,11 +269,26 @@ func TestMapleClassifierClassifyDocumentRepairsInvalidJSON(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ClassifyDocument returned error after repair: %v", err)
 	}
-	if len(hs) != 1 || hs[0].Name != "consistency" {
-		t.Errorf("heuristics = %#v", hs)
+	if len(hs) != 4 {
+		t.Errorf("heuristics = %d, want 4", len(hs))
 	}
 	if len(completer.requests) != 2 {
-		t.Errorf("requests = %d, want 2 (initial + repair)", len(completer.requests))
+		t.Fatalf("requests = %d, want 2 (initial + repair)", len(completer.requests))
+	}
+
+	// The repair must be schema-aware (pin the heuristics schema), not the
+	// generic "fix this JSON" prompt — without the schema anchor the model
+	// drifts to other shapes (observed in production: drifted to the
+	// classification report's documents/claims schema).
+	repair := completer.requests[1]
+	if len(repair.Messages) < 1 {
+		t.Fatal("repair request had no messages")
+	}
+	system := repair.Messages[0].Content
+	for _, want := range []string{"consistency", "references", "emotive_language", "ideology_or_incentives", `"score"`, `"explanation"`} {
+		if !strings.Contains(system, want) {
+			t.Errorf("repair system prompt missing %q (schema must be pinned). got: %s", want, system)
+		}
 	}
 }
 

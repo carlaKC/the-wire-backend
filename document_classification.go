@@ -44,6 +44,40 @@ func buildDocumentHeuristicsRequest(model, content string) chatRequest {
 	}
 }
 
+// buildDocumentHeuristicsRepairRequest is a schema-aware repair pass for the
+// per-document heuristics response. The generic buildRepairRequest only says
+// "fix this JSON" and has been observed to drift toward an unrelated schema
+// (the classification report's documents/claims shape) when the model has
+// no anchor for what valid output looks like. This version pins the schema
+// explicitly so the repair stays on-topic.
+func buildDocumentHeuristicsRepairRequest(model, invalidContent string) chatRequest {
+	return chatRequest{
+		Model:          model,
+		Temperature:    0,
+		ResponseFormat: responseFormat{Type: "json_object"},
+		Messages: []chatMessage{
+			{
+				Role: "system",
+				Content: `Repair malformed JSON into a strict JSON object that exactly matches this schema:
+
+{
+  "heuristics": [
+    {"name": "<string>", "score": "high|medium|low", "explanation": "<string>"}
+  ]
+}
+
+The "heuristics" array MUST contain exactly four entries, with names: consistency, references, emotive_language, ideology_or_incentives. Preserve every field's value as accurately as you can from the input — if a field's value is itself broken (missing quotes around a string, unquoted text), interpret it conservatively and quote it.
+
+Return ONLY the corrected JSON object. No commentary, no markdown, no extra top-level fields.`,
+			},
+			{
+				Role:    "user",
+				Content: invalidContent,
+			},
+		},
+	}
+}
+
 // ClassifyDocument runs the per-document heuristic prompt against a single
 // document and returns the parsed heuristics. On a malformed JSON response
 // it issues one repair pass — same retry pattern as Classify — before
@@ -62,7 +96,7 @@ func (c mapleClassifier) ClassifyDocument(ctx context.Context, document classifi
 		return heuristics, nil
 	}
 
-	repairedContent, repairErr := c.client.ChatCompletion(ctx, buildRepairRequest(c.model, content))
+	repairedContent, repairErr := c.client.ChatCompletion(ctx, buildDocumentHeuristicsRepairRequest(c.model, content))
 	if repairErr != nil {
 		return nil, fmt.Errorf("%w; repair request failed: %v", parseErr, repairErr)
 	}
