@@ -18,10 +18,14 @@ type classifierCall struct {
 }
 
 type controlledClassifier struct {
-	report  classificationReport
-	err     error
-	release chan struct{}
-	calls   chan classifierCall
+	report           classificationReport
+	err              error
+	release          chan struct{}
+	calls            chan classifierCall
+	documentReport   []heuristic
+	documentErr      error
+	documentReleases chan struct{}
+	documentCalls    chan classifiedInput
 }
 
 func newControlledClassifier(report classificationReport, err error) *controlledClassifier {
@@ -41,6 +45,16 @@ func (c *controlledClassifier) Classify(_ context.Context, documents []classifie
 		<-c.release
 	}
 	return c.report, c.err
+}
+
+func (c *controlledClassifier) ClassifyDocument(_ context.Context, document classifiedInput) ([]heuristic, error) {
+	if c.documentCalls != nil {
+		c.documentCalls <- document
+	}
+	if c.documentReleases != nil {
+		<-c.documentReleases
+	}
+	return c.documentReport, c.documentErr
 }
 
 func TestMapleCreateCaseStartsProcessingAndCompletes(t *testing.T) {

@@ -24,6 +24,7 @@ var invalidNumericIDPattern = regexp.MustCompile(`("id"\s*:\s*)([^0-9"\{\[\]tfn\
 
 type classifier interface {
 	Classify(ctx context.Context, documents []classifiedInput, existingCategories []categoryCandidate) (classificationReport, error)
+	ClassifyDocument(ctx context.Context, document classifiedInput) ([]heuristic, error)
 }
 
 type mapleChatCompleter interface {

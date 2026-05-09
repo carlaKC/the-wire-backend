@@ -178,6 +178,136 @@ func TestMapleClassifierUsesInjectedChatCompleter(t *testing.T) {
 	}
 }
 
+func TestMapleClassifierClassifyDocumentReturnsParsedHeuristics(t *testing.T) {
+	completer := &recordingChatCompleter{
+		contents: []string{`{"heuristics":[
+			{"name":"consistency","score":"high","explanation":"coherent timeline"},
+			{"name":"references","score":"medium","explanation":"some dates and a PO"},
+			{"name":"emotive_language","score":"low","explanation":"factual tone"},
+			{"name":"ideology_or_incentives","score":"low","explanation":"no agenda"}
+		]}`},
+	}
+	classifier := mapleClassifier{model: "doc-model", client: completer}
+
+	hs, err := classifier.ClassifyDocument(context.Background(), classifiedInput{
+		ID:      "memo.txt",
+		Content: "MEMO BODY HERE",
+	})
+	if err != nil {
+		t.Fatalf("ClassifyDocument returned error: %v", err)
+	}
+	if len(hs) != 4 {
+		t.Fatalf("heuristics = %d, want 4", len(hs))
+	}
+
+	if len(completer.requests) != 1 {
+		t.Fatalf("requests = %d, want 1", len(completer.requests))
+	}
+	req := completer.requests[0]
+	if req.Model != "doc-model" {
+		t.Errorf("model = %q, want doc-model", req.Model)
+	}
+	if req.Temperature != 0 {
+		t.Errorf("temperature = %v, want 0", req.Temperature)
+	}
+	if req.ResponseFormat.Type != "json_object" {
+		t.Errorf("response_format = %q, want json_object", req.ResponseFormat.Type)
+	}
+	if len(req.Messages) != 1 {
+		t.Fatalf("messages = %d, want 1", len(req.Messages))
+	}
+	prompt := req.Messages[0].Content
+	if strings.Contains(prompt, documentTextPlaceholder) {
+		t.Error("rendered prompt still contains the placeholder")
+	}
+	if !strings.Contains(prompt, "MEMO BODY HERE") {
+		t.Error("rendered prompt missing the document body")
+	}
+
+	// score → Rating, explanation → Description
+	wantRating := map[string]string{
+		"consistency":            "high",
+		"references":             "medium",
+		"emotive_language":       "low",
+		"ideology_or_incentives": "low",
+	}
+	for _, h := range hs {
+		if h.Rating != wantRating[h.Name] {
+			t.Errorf("%s rating = %q, want %q", h.Name, h.Rating, wantRating[h.Name])
+		}
+		if h.Description == "" {
+			t.Errorf("%s description (mapped from explanation) is empty", h.Name)
+		}
+	}
+}
+
+func TestMapleClassifierClassifyDocumentRepairsInvalidJSON(t *testing.T) {
+	completer := &recordingChatCompleter{
+		contents: []string{
+			`not json at all`,
+			`{"heuristics":[{"name":"consistency","score":"high","explanation":"ok"}]}`,
+		},
+	}
+	classifier := mapleClassifier{model: "doc-model", client: completer}
+
+	hs, err := classifier.ClassifyDocument(context.Background(), classifiedInput{Content: "x"})
+	if err != nil {
+		t.Fatalf("ClassifyDocument returned error after repair: %v", err)
+	}
+	if len(hs) != 1 || hs[0].Name != "consistency" {
+		t.Errorf("heuristics = %#v", hs)
+	}
+	if len(completer.requests) != 2 {
+		t.Errorf("requests = %d, want 2 (initial + repair)", len(completer.requests))
+	}
+}
+
+func TestParseDocumentHeuristicsMapsFields(t *testing.T) {
+	hs, err := parseDocumentHeuristics(`{"heuristics":[
+		{"name":"consistency","score":"high","explanation":"coherent"},
+		{"name":"references","score":"low","explanation":"vague"}
+	]}`)
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	if len(hs) != 2 {
+		t.Fatalf("heuristics = %d, want 2", len(hs))
+	}
+	if hs[0].Name != "consistency" || hs[0].Rating != "high" || hs[0].Description != "coherent" {
+		t.Errorf("hs[0] = %#v", hs[0])
+	}
+	if hs[1].Name != "references" || hs[1].Rating != "low" || hs[1].Description != "vague" {
+		t.Errorf("hs[1] = %#v", hs[1])
+	}
+}
+
+func TestParseDocumentHeuristicsRejectsBadJSON(t *testing.T) {
+	if _, err := parseDocumentHeuristics(`{not json`); err == nil {
+		t.Error("expected error on invalid JSON")
+	}
+}
+
+func TestParseDocumentHeuristicsRejectsEmptyHeuristics(t *testing.T) {
+	if _, err := parseDocumentHeuristics(`{"heuristics":[]}`); err == nil {
+		t.Error("expected error on empty heuristics array")
+	}
+}
+
+func TestRenderDocumentHeuristicsPromptSubstitutes(t *testing.T) {
+	out := renderDocumentHeuristicsPrompt("HELLO WORLD")
+	if strings.Contains(out, documentTextPlaceholder) {
+		t.Errorf("placeholder still present after render: %s", documentTextPlaceholder)
+	}
+	if !strings.Contains(out, "HELLO WORLD") {
+		t.Error("rendered prompt missing the substituted document text")
+	}
+	for _, h := range []string{"consistency", "references", "emotive_language", "ideology_or_incentives"} {
+		if !strings.Contains(out, h) {
+			t.Errorf("rendered prompt missing heuristic name %q", h)
+		}
+	}
+}
+
 func TestParseClassificationContentAcceptsStringClaims(t *testing.T) {
 	report, err := parseClassificationContent(`{
 		"documents": [
