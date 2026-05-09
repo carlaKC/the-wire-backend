@@ -6,7 +6,7 @@ HTTP API for submitting whistleblower document dumps and retrieving categorized,
 
 ```sh
 export MAPLE_API_KEY=...
-go run . --maple
+go run . --nomock
 ```
 
 Listens on `:8080` by default (override with `PORT`).
@@ -17,7 +17,7 @@ Classification settings:
 - `MAPLE_BASE_URL` defaults to `http://127.0.0.1:8081`.
 - `MAPLE_MODEL` defaults to `deepseek-v4-pro`.
 
-Without `--maple`, the server keeps the hardcoded mock responses for frontend development. `--nomock` runs the local asynchronous stub processor.
+Without `--nomock`, the server keeps the hardcoded mock responses for frontend development. Maple is the only non-mock processing mode.
 
 CORS is permissive (`Access-Control-Allow-Origin: *`) — the API can be called from any frontend origin without a proxy.
 

@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"regexp"
 	"strings"
 	"time"
 )
@@ -16,6 +17,10 @@ const (
 	defaultMapleBaseURL = "http://127.0.0.1:8081"
 	defaultMapleModel   = "deepseek-v4-pro"
 )
+
+var errMapleQuotaExhausted = errors.New("maple quota exhausted: 电量不足，请充值后使用")
+
+var invalidNumericIDPattern = regexp.MustCompile(`("id"\s*:\s*)([^0-9"\{\[\]tfn\-\s][^,}\]\r\n]*)`)
 
 type classifier interface {
 	Classify(ctx context.Context, documents []classifiedInput, existingCategories []categoryCandidate) (classificationReport, error)
@@ -74,6 +79,22 @@ type classifiedClaim struct {
 	Validation  classifiedValidation  `json:"validation"`
 	Sensitivity classifiedSensitivity `json:"sensitivity"`
 	Flags       []string              `json:"flags"`
+}
+
+func (c *classifiedClaim) UnmarshalJSON(data []byte) error {
+	var claimText string
+	if err := json.Unmarshal(data, &claimText); err == nil {
+		c.Claim = claimText
+		return nil
+	}
+
+	type classifiedClaimAlias classifiedClaim
+	var claim classifiedClaimAlias
+	if err := json.Unmarshal(data, &claim); err != nil {
+		return err
+	}
+	*c = classifiedClaim(claim)
+	return nil
 }
 
 type classifiedValidation struct {
@@ -152,6 +173,9 @@ func (c mapleClassifier) Classify(ctx context.Context, documents []classifiedInp
 	if err == nil {
 		return report, nil
 	}
+	if errors.Is(err, errMapleQuotaExhausted) {
+		return classificationReport{}, err
+	}
 
 	repairedContent, repairErr := c.client.ChatCompletion(ctx, buildRepairRequest(c.model, content))
 	if repairErr != nil {
@@ -159,6 +183,9 @@ func (c mapleClassifier) Classify(ctx context.Context, documents []classifiedInp
 	}
 	report, repairErr = parseClassificationContent(repairedContent)
 	if repairErr != nil {
+		if errors.Is(repairErr, errMapleQuotaExhausted) {
+			return classificationReport{}, repairErr
+		}
 		return classificationReport{}, fmt.Errorf("%w; repair also failed: %v", err, repairErr)
 	}
 	return report, nil
@@ -174,7 +201,8 @@ func buildClassificationRequest(model, documentJSON, categoryJSON string) chatRe
 				Role: "system",
 				Content: "Extract factual claims from each document, assign each document to one reusable category, and validate each claim against the source document. " +
 					"Return one strict JSON object with a documents array. When an existing category fits, set topic.id to its integer id. " +
-					"When no existing category fits, set topic.id to 0 and provide a concise topic.title and topic.description.",
+					"When no existing category fits, set topic.id to 0 and provide a concise topic.title and topic.description. " +
+					"All id fields that are numeric in the schema must be JSON numbers, never words or translated text.",
 			},
 			{
 				Role:    "user",
@@ -191,8 +219,13 @@ func buildRepairRequest(model, invalidContent string) chatRequest {
 		ResponseFormat: responseFormat{Type: "json_object"},
 		Messages: []chatMessage{
 			{
-				Role:    "system",
-				Content: "Repair malformed JSON into strict valid JSON. Return only the corrected JSON object.",
+				Role: "system",
+				Content: "Repair malformed JSON into strict valid JSON that matches the classification schema. " +
+					"Return only one corrected JSON object with a documents array. " +
+					"Each document must include id, topic, document_type, sensitivity, rationale, and claims. " +
+					"Each claim must be an object with id, claim, category, confidence, evidence, validation, sensitivity, and flags. " +
+					"Use topic.id=0 unless an existing integer category id is present. " +
+					"All id fields that are numeric in the schema must be JSON numbers, never words or translated text.",
 			},
 			{
 				Role:    "user",
@@ -252,16 +285,58 @@ func (c mapleClient) ChatCompletion(ctx context.Context, reqBody chatRequest) (s
 }
 
 func parseClassificationContent(content string) (classificationReport, error) {
-	if !json.Valid([]byte(content)) {
-		return classificationReport{}, fmt.Errorf("model returned non-JSON content: %s", content)
+	data, err := extractJSONContent(content)
+	if err != nil {
+		return classificationReport{}, err
 	}
 
 	var report classificationReport
-	if err := json.Unmarshal([]byte(content), &report); err != nil {
+	if err := json.Unmarshal(data, &report); err != nil {
 		return classificationReport{}, fmt.Errorf("decode classification report: %w", err)
 	}
 	if len(report.Documents) == 0 {
 		return classificationReport{}, errors.New("classification report contained no documents")
 	}
 	return report, nil
+}
+
+func extractJSONContent(content string) ([]byte, error) {
+	if strings.Contains(content, "电量不足，请充值后使用") {
+		return nil, errMapleQuotaExhausted
+	}
+
+	trimmed := strings.TrimSpace(content)
+	start := strings.Index(trimmed, "{")
+	if start < 0 {
+		return nil, fmt.Errorf("model returned non-JSON content: %s", abbreviateContent(trimmed))
+	}
+
+	decoder := json.NewDecoder(strings.NewReader(trimmed[start:]))
+	var raw json.RawMessage
+	if err := decoder.Decode(&raw); err != nil {
+		repaired := sanitizeInvalidNumericIDs(trimmed[start:])
+		if repaired == trimmed[start:] {
+			return nil, fmt.Errorf("model returned non-JSON content: %s", abbreviateContent(trimmed))
+		}
+		decoder = json.NewDecoder(strings.NewReader(repaired))
+		if repairErr := decoder.Decode(&raw); repairErr != nil {
+			return nil, fmt.Errorf("model returned non-JSON content: %s", abbreviateContent(trimmed))
+		}
+	}
+	if len(raw) == 0 || raw[0] != '{' {
+		return nil, fmt.Errorf("model returned non-object JSON content: %s", abbreviateContent(trimmed))
+	}
+	return raw, nil
+}
+
+func sanitizeInvalidNumericIDs(content string) string {
+	return invalidNumericIDPattern.ReplaceAllString(content, `${1}0`)
+}
+
+func abbreviateContent(content string) string {
+	const limit = 500
+	if len(content) <= limit {
+		return content
+	}
+	return content[:limit] + "...[truncated]"
 }

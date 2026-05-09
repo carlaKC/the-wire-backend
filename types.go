@@ -1,5 +1,11 @@
 package main
 
+const (
+	statusProcessing = "processing"
+	statusComplete   = "complete"
+	statusFailed     = "failed"
+)
+
 type heuristic struct {
 	Name        string `json:"name"`
 	Rating      string `json:"rating"`

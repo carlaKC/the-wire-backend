@@ -15,20 +15,37 @@ type caseData struct {
 	documents map[int]categoryDocumentsResponse
 }
 
-type caseStore struct {
-	mu         sync.RWMutex
-	nextCaseID int
-	cases      map[int]caseData
+type globalCategory struct {
+	id            int
+	title         string
+	description   string
+	maxLevel      int
+	documentCount int
+	claimCount    int
+	statuses      map[string]int
+	docTypes      map[string]int
 }
 
-func newCaseStore() *caseStore {
-	return &caseStore{
-		nextCaseID: 1,
-		cases:      map[int]caseData{},
+type classifiedCaseStore struct {
+	mu             sync.RWMutex
+	nextCaseID     int
+	nextCategoryID int
+	cases          map[int]caseData
+	categories     map[int]*globalCategory
+	categoryTitles map[string]int
+}
+
+func newClassifiedCaseStore() *classifiedCaseStore {
+	return &classifiedCaseStore{
+		nextCaseID:     1,
+		nextCategoryID: 1,
+		cases:          map[int]caseData{},
+		categories:     map[int]*globalCategory{},
+		categoryTitles: map[string]int{},
 	}
 }
 
-func (s *caseStore) create(data caseData) int {
+func (s *classifiedCaseStore) create(data caseData) int {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -47,11 +64,11 @@ func (s *caseStore) create(data caseData) int {
 	return id
 }
 
-func (s *caseStore) replaceClassified(id int, createdAt time.Time, inputs []classifiedInput, report classificationReport) {
+func (s *classifiedCaseStore) replaceClassified(id int, createdAt time.Time, inputs []classifiedInput, report classificationReport) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	data := buildCaseData(createdAt, inputs, report)
+	data := s.buildCaseDataLocked(createdAt, inputs, report)
 	data.summary.CaseID = id
 	for categoryID, detail := range data.details {
 		detail.CaseID = id
@@ -64,7 +81,7 @@ func (s *caseStore) replaceClassified(id int, createdAt time.Time, inputs []clas
 	s.cases[id] = data
 }
 
-func (s *caseStore) markFailed(id int) {
+func (s *classifiedCaseStore) markFailed(id int) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	data, ok := s.cases[id]
@@ -75,11 +92,25 @@ func (s *caseStore) markFailed(id int) {
 	s.cases[id] = data
 }
 
-func (s *caseStore) categoryCandidates() []categoryCandidate {
-	return nil
+func (s *classifiedCaseStore) categoryCandidates() []categoryCandidate {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	out := make([]categoryCandidate, 0, len(s.categories))
+	for _, category := range s.categories {
+		out = append(out, categoryCandidate{
+			ID:          category.id,
+			Title:       category.title,
+			Description: category.description,
+		})
+	}
+	sort.Slice(out, func(i, j int) bool {
+		return out[i].ID < out[j].ID
+	})
+	return out
 }
 
-func (s *caseStore) get(id int) (caseData, bool) {
+func (s *classifiedCaseStore) get(id int) (caseData, bool) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	data, ok := s.cases[id]
@@ -99,7 +130,7 @@ func emptyCaseData(createdAt time.Time, documentCount int) caseData {
 	}
 }
 
-func buildCaseData(createdAt time.Time, inputs []classifiedInput, report classificationReport) caseData {
+func (s *classifiedCaseStore) buildCaseDataLocked(createdAt time.Time, inputs []classifiedInput, report classificationReport) caseData {
 	inputByID := map[string]classifiedInput{}
 	for _, input := range inputs {
 		inputByID[input.ID] = input
@@ -116,38 +147,26 @@ func buildCaseData(createdAt time.Time, inputs []classifiedInput, report classif
 		docTypes    map[string]int
 	}
 
-	categories := map[string]*categoryBuild{}
-	order := []string{}
-	nextCategoryID := 1
+	categories := map[int]*categoryBuild{}
+	order := []int{}
 	nextDocumentID := 1
 
 	for _, classified := range report.Documents {
-		key := categoryKey(classified.Topic.Title)
-		if key == "" {
-			key = normalizedCategory(classified.Topic.Category)
-		}
-		if _, ok := categories[key]; !ok {
-			title := strings.TrimSpace(classified.Topic.Title)
-			if title == "" {
-				title = humanTitle(classified.Topic.Category)
-			}
-			description := strings.TrimSpace(classified.Topic.Description)
-			if description == "" {
-				description = strings.TrimSpace(classified.Rationale)
-			}
-			categories[key] = &categoryBuild{
-				id:          nextCategoryID,
-				title:       title,
-				description: description,
+		global := s.resolveCategoryLocked(classified.Topic, classified.Rationale)
+		s.updateGlobalCategoryStatsLocked(global, classified)
+		if _, ok := categories[global.id]; !ok {
+			categories[global.id] = &categoryBuild{
+				id:          global.id,
+				title:       global.title,
+				description: global.description,
 				maxLevel:    classified.Sensitivity.Level,
 				statuses:    map[string]int{},
 				docTypes:    map[string]int{},
 			}
-			nextCategoryID++
-			order = append(order, key)
+			order = append(order, global.id)
 		}
 
-		category := categories[key]
+		category := categories[global.id]
 		category.maxLevel = max(category.maxLevel, classified.Sensitivity.Level)
 		category.claimCount += len(classified.Claims)
 		if classified.DocumentType.Category != "" {
@@ -177,8 +196,8 @@ func buildCaseData(createdAt time.Time, inputs []classifiedInput, report classif
 	details := map[int]categoryDetailResponse{}
 	documents := map[int]categoryDocumentsResponse{}
 
-	for _, key := range order {
-		category := categories[key]
+	for _, id := range order {
+		category := categories[id]
 		if category.description == "" {
 			category.description = fmt.Sprintf("%d document(s) categorized as %s.", len(category.documents), category.title)
 		}
@@ -190,6 +209,7 @@ func buildCaseData(createdAt time.Time, inputs []classifiedInput, report classif
 			Triage:      triage,
 			Description: category.description,
 		})
+
 		details[category.id] = categoryDetailResponse{
 			Category: categoryDetail{
 				ID:            category.id,
@@ -215,6 +235,57 @@ func buildCaseData(createdAt time.Time, inputs []classifiedInput, report classif
 		},
 		details:   details,
 		documents: documents,
+	}
+}
+
+func (s *classifiedCaseStore) resolveCategoryLocked(topic classifiedCategory, fallbackDescription string) *globalCategory {
+	if topic.ID > 0 {
+		if category, ok := s.categories[topic.ID]; ok {
+			return category
+		}
+	}
+
+	title := strings.TrimSpace(topic.Title)
+	if title == "" {
+		title = humanTitle(topic.Category)
+	}
+	key := categoryKey(title)
+	if id, ok := s.categoryTitles[key]; ok {
+		return s.categories[id]
+	}
+
+	description := strings.TrimSpace(topic.Description)
+	if description == "" {
+		description = strings.TrimSpace(fallbackDescription)
+	}
+	if description == "" {
+		description = "Documents categorized as " + title + "."
+	}
+
+	category := &globalCategory{
+		id:          s.nextCategoryID,
+		title:       title,
+		description: description,
+		statuses:    map[string]int{},
+		docTypes:    map[string]int{},
+	}
+	s.nextCategoryID++
+	s.categories[category.id] = category
+	s.categoryTitles[key] = category.id
+	return category
+}
+
+func (s *classifiedCaseStore) updateGlobalCategoryStatsLocked(category *globalCategory, document classifiedDocument) {
+	category.documentCount++
+	category.maxLevel = max(category.maxLevel, document.Sensitivity.Level)
+	category.claimCount += len(document.Claims)
+	if document.DocumentType.Category != "" {
+		category.docTypes[normalizedCategory(document.DocumentType.Category)]++
+	}
+	for _, claim := range document.Claims {
+		status := validationStatus(claim.Validation.Status)
+		category.statuses[status]++
+		category.maxLevel = max(category.maxLevel, claim.Sensitivity.Level)
 	}
 }
 

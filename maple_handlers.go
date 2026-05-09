@@ -12,12 +12,12 @@ import (
 )
 
 type mapleServer struct {
-	store      *caseStore
+	store      *classifiedCaseStore
 	classifier classifier
 }
 
 func newMapleServer(classifier classifier) *mapleServer {
-	return &mapleServer{store: newCaseStore(), classifier: classifier}
+	return &mapleServer{store: newClassifiedCaseStore(), classifier: classifier}
 }
 
 func registerMapleHandlers(mux *http.ServeMux, srv *mapleServer) {

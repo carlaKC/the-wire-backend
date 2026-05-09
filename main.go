@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"encoding/json"
 	"flag"
 	"log"
@@ -9,13 +8,6 @@ import (
 	"os"
 	"strconv"
 	"time"
-)
-
-const (
-	defaultDocDelay        = 2 * time.Second
-	defaultCatDelay        = 3 * time.Second
-	defaultDocConcurrency  = 8
-	defaultCaseConcurrency = 4
 )
 
 func writeJSON(w http.ResponseWriter, status int, body any) {
@@ -69,16 +61,8 @@ func registerMockHandlers(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/cases/{case_id}/categories/{category_id}/documents", mockGetCategoryDocumentsHandler)
 }
 
-func registerNomockHandlers(mux *http.ServeMux, srv *server) {
-	mux.HandleFunc("POST /api/v1/cases", srv.createCaseHandler)
-	mux.HandleFunc("GET /api/v1/cases/{case_id}", srv.getCaseHandler)
-	mux.HandleFunc("GET /api/v1/cases/{case_id}/categories/{category_id}", srv.getCategoryHandler)
-	mux.HandleFunc("GET /api/v1/cases/{case_id}/categories/{category_id}/documents", srv.getCategoryDocumentsHandler)
-}
-
 func main() {
-	maple := flag.Bool("maple", false, "use Maple-backed in-memory classification")
-	nomock := flag.Bool("nomock", false, "use real in-memory implementation instead of hardcoded mock data")
+	nomock := flag.Bool("nomock", false, "use Maple-backed in-memory classification instead of hardcoded mock data")
 	flag.Parse()
 
 	port := os.Getenv("PORT")
@@ -89,7 +73,7 @@ func main() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthcheck", healthHandler)
 
-	if *maple {
+	if *nomock {
 		client := mapleClient{
 			baseURL: envOrDefault("MAPLE_BASE_URL", defaultMapleBaseURL),
 			apiKey:  os.Getenv("MAPLE_API_KEY"),
@@ -102,16 +86,12 @@ func main() {
 			client: client,
 		}
 		registerMapleHandlers(mux, newMapleServer(classifier))
-	} else if *nomock {
-		s := newStore(defaultDocConcurrency, defaultCaseConcurrency, defaultDocDelay, defaultCatDelay)
-		srv := &server{store: s, ctx: context.Background()}
-		registerNomockHandlers(mux, srv)
 	} else {
 		registerMockHandlers(mux)
 	}
 
 	addr := ":" + port
-	log.Printf("listening on %s (maple=%v, nomock=%v)", addr, *maple, *nomock)
+	log.Printf("listening on %s (nomock=%v)", addr, *nomock)
 	if err := http.ListenAndServe(addr, withCORS(mux)); err != nil {
 		log.Fatal(err)
 	}
