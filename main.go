@@ -27,6 +27,7 @@ type categorySummary struct {
 type caseSummaryResponse struct {
 	CaseID        int               `json:"case_id"`
 	CreatedAt     string            `json:"created_at"`
+	Status        string            `json:"status"`
 	DocumentCount int               `json:"document_count"`
 	Categories    []categorySummary `json:"categories"`
 }
@@ -94,6 +95,7 @@ const (
 var mockCaseSummary = caseSummaryResponse{
 	CaseID:        mockCaseID,
 	CreatedAt:     mockCreatedAt,
+	Status:        "complete",
 	DocumentCount: 4,
 	Categories: []categorySummary{
 		{

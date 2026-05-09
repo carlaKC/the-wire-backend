@@ -54,7 +54,17 @@ curl http://localhost:8080/api/v1/cases/1/categories/1/documents
 
 ## Processing model
 
-Synchronous. Once `POST /cases` returns 201, all GET endpoints return final data. There is no status field, no polling, no webhook.
+`POST /cases` returns the case ID immediately. Analysis runs asynchronously, and the case progresses through `status` values on the case summary:
+
+| Status | Meaning |
+|--------|---------|
+| `processing` | Analysis is in flight. `categories` may be empty or partial. Per-document `heuristics` may be empty. Category endpoints (`/categories/{cid}` and `/categories/{cid}/documents`) return `404 category_not_found` until the category is materialized. |
+| `complete` | Analysis finished. All data populated. |
+| `failed` | Analysis errored. The case is terminal; further polling will not change the result. |
+
+Clients should poll `GET /cases/{id}` until `status` is `complete` or `failed`.
+
+The current mock implementation is effectively synchronous: every newly created case is reported with `status: "complete"` immediately.
 
 ## Mock dataset
 
@@ -113,6 +123,7 @@ Case summary — the categories the service inferred for this dump.
 {
   "case_id": 1,
   "created_at": "2026-05-09T12:34:56Z",
+  "status": "complete",
   "document_count": 4,
   "categories": [
     {
@@ -140,8 +151,9 @@ Case summary — the categories the service inferred for this dump.
 | Field | Type | Notes |
 |-------|------|-------|
 | `created_at` | string | RFC3339 UTC. |
+| `status` | string | One of `processing`, `complete`, `failed`. See [Processing model](#processing-model). |
 | `document_count` | integer | Total documents in the case (sum across categories). |
-| `categories` | array | Order is service-defined; sort on the client if you need triage-first ordering. |
+| `categories` | array | Order is service-defined; sort on the client if you need triage-first ordering. May be empty while `status` is `processing`. |
 
 **Errors:**
 - `404 case_not_found`.
@@ -239,7 +251,7 @@ All `4xx`/`5xx` responses share this shape:
 ## Suggested frontend flow
 
 1. **Submit** — user pastes/uploads text documents. `POST /cases`. Capture `case_id` and route to the case overview.
-2. **Overview** — `GET /cases/{case_id}`. Render category cards. Sort client-side by triage (high → medium → low) to draw the eye.
+2. **Overview** — `GET /cases/{case_id}`. If `status` is `processing`, show a pending state and poll. Once `complete`, render category cards. Sort client-side by triage (high → medium → low) to draw the eye.
 3. **Drill into a category** — `GET /cases/{case_id}/categories/{category_id}` for the category-level signal. You can also fire `GET /cases/{case_id}/categories/{category_id}/documents` in parallel and render documents in a side panel or below the heuristics.
 4. **Inspect a document** — within the documents view, expandable cards showing filename, raw content, and per-doc heuristics.
 
@@ -261,9 +273,12 @@ export interface CategorySummary {
   description: string;
 }
 
+export type CaseStatus = "processing" | "complete" | "failed";
+
 export interface CaseSummary {
   case_id: number;
   created_at: string; // RFC3339
+  status: CaseStatus;
   document_count: number;
   categories: CategorySummary[];
 }
