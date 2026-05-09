@@ -74,11 +74,13 @@ func main() {
 	mux.HandleFunc("GET /healthcheck", healthHandler)
 
 	if *nomock {
+		timeout := mapleTimeoutFromEnv()
+		log.Printf("maple client: timeout=%s base_url=%s", timeout, envOrDefault("MAPLE_BASE_URL", defaultMapleBaseURL))
 		client := mapleClient{
 			baseURL: envOrDefault("MAPLE_BASE_URL", defaultMapleBaseURL),
 			apiKey:  os.Getenv("MAPLE_API_KEY"),
 			httpClient: &http.Client{
-				Timeout: 60 * time.Second,
+				Timeout: timeout,
 			},
 		}
 		classifier := mapleClassifier{
@@ -95,4 +97,21 @@ func main() {
 	if err := http.ListenAndServe(addr, withCORS(mux)); err != nil {
 		log.Fatal(err)
 	}
+}
+
+// mapleTimeoutFromEnv reads MAPLE_TIMEOUT_SECONDS and returns it as a
+// time.Duration. Falls back to defaultMapleTimeout for unset, non-numeric, or
+// non-positive values, logging the override failure so it's visible at
+// startup rather than silently masking a typo.
+func mapleTimeoutFromEnv() time.Duration {
+	raw := os.Getenv("MAPLE_TIMEOUT_SECONDS")
+	if raw == "" {
+		return defaultMapleTimeout
+	}
+	seconds, err := strconv.Atoi(raw)
+	if err != nil || seconds <= 0 {
+		log.Printf("MAPLE_TIMEOUT_SECONDS=%q is not a positive integer; using default %s", raw, defaultMapleTimeout)
+		return defaultMapleTimeout
+	}
+	return time.Duration(seconds) * time.Second
 }

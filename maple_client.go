@@ -15,6 +15,11 @@ import (
 const (
 	defaultMapleBaseURL = "http://127.0.0.1:8081"
 	defaultMapleModel   = "deepseek-v4-pro"
+	// defaultMapleTimeout is generous on purpose: case classification across
+	// multi-document submissions routinely takes 1–3 minutes server-side, and
+	// the previous 60s value was tripping legitimate calls. Override at
+	// startup via MAPLE_TIMEOUT_SECONDS.
+	defaultMapleTimeout = 5 * time.Minute
 )
 
 // mapleChatCompleter is the dependency the classifier needs from the model
@@ -61,7 +66,7 @@ func (c mapleClient) ChatCompletion(ctx context.Context, reqBody chatRequest) (s
 		return "", errors.New("MAPLE_API_KEY is required")
 	}
 	if c.httpClient == nil {
-		c.httpClient = &http.Client{Timeout: 60 * time.Second}
+		c.httpClient = &http.Client{Timeout: defaultMapleTimeout}
 	}
 
 	body, err := json.Marshal(reqBody)

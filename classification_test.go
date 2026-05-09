@@ -388,6 +388,44 @@ func TestParseClassificationContentExtractsWrappedJSONObject(t *testing.T) {
 	}
 }
 
+// When the model response is cut off mid-stream (typically because an upstream
+// max-token cap chopped it), the decoder returns io.ErrUnexpectedEOF. The
+// error must surface that as truncation + a tail excerpt — without this hint,
+// debugging requires guessing whether the failure was syntax or truncation.
+func TestParseClassificationContentDiagnosticsForTruncatedJSON(t *testing.T) {
+	truncated := `{"documents":[{"id":"a","topic":{"id":1,"title":"T",`
+	_, err := parseClassificationContent(truncated)
+	if err == nil {
+		t.Fatal("expected error on truncated JSON")
+	}
+	msg := err.Error()
+	if !strings.Contains(msg, "truncated") {
+		t.Errorf("error should hint truncation, got: %v", err)
+	}
+	if !strings.Contains(msg, "tail:") {
+		t.Errorf("error should include tail excerpt, got: %v", err)
+	}
+}
+
+// When the model response has a syntax error somewhere past the head excerpt,
+// json.Decoder returns *json.SyntaxError with a byte Offset. The error must
+// surface that offset + a window around it — the head excerpt alone hides the
+// failure point on multi-kilobyte responses.
+func TestParseClassificationContentDiagnosticsForSyntaxError(t *testing.T) {
+	bad := `{"documents":[{"id":"a","topic":{"id":1,"title":"T"}},,]}`
+	_, err := parseClassificationContent(bad)
+	if err == nil {
+		t.Fatal("expected error on bad JSON syntax")
+	}
+	msg := err.Error()
+	if !strings.Contains(msg, "offset") {
+		t.Errorf("error should include byte offset, got: %v", err)
+	}
+	if !strings.Contains(msg, "<<HERE>>") {
+		t.Errorf("error should include a window marker, got: %v", err)
+	}
+}
+
 func TestParseClassificationContentDetectsMapleQuotaMessage(t *testing.T) {
 	_, err := parseClassificationContent(`{"documents":[{"id":"memo.txt","topic":{"id":电量不足，请充值后使用。`)
 	if !errors.Is(err, errMapleQuotaExhausted) {
