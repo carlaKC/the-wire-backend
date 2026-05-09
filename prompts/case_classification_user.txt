@@ -1,0 +1,5 @@
+Existing topics:
+{{TOPICS}}
+
+Documents:
+{{DOCUMENTS}}

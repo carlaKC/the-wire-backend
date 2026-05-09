@@ -60,9 +60,9 @@ func (s *mapleServer) createCaseHandler(w http.ResponseWriter, r *http.Request) 
 // independent and run concurrently:
 //
 //   - classifyCase runs classification for the whole case (topic assignment +
-//     per-document metadata via the model).
-//   - classifyDocuments will run per-document analysis. It is currently a
-//     no-op placeholder so the wiring exists for a future prompt.
+//     per-document metadata via the case-classification prompt).
+//   - classifyDocuments fans out the document-heuristics prompt across each
+//     document and collects per-document heuristic scores.
 //
 // Both goroutines `defer wg.Done()` so a panic can't leak the WaitGroup, and
 // processCase blocks on Wait before deciding the case's terminal state. A

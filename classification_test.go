@@ -213,15 +213,18 @@ func TestMapleClassifierClassifyDocumentReturnsParsedHeuristics(t *testing.T) {
 	if req.ResponseFormat.Type != "json_object" {
 		t.Errorf("response_format = %q, want json_object", req.ResponseFormat.Type)
 	}
-	if len(req.Messages) != 1 {
-		t.Fatalf("messages = %d, want 1", len(req.Messages))
+	if len(req.Messages) != 2 {
+		t.Fatalf("messages = %d, want 2 (system + user)", len(req.Messages))
 	}
-	prompt := req.Messages[0].Content
-	if strings.Contains(prompt, documentTextPlaceholder) {
-		t.Error("rendered prompt still contains the placeholder")
+	if req.Messages[0].Role != "system" || req.Messages[1].Role != "user" {
+		t.Errorf("message roles = %q,%q; want system,user", req.Messages[0].Role, req.Messages[1].Role)
 	}
-	if !strings.Contains(prompt, "MEMO BODY HERE") {
-		t.Error("rendered prompt missing the document body")
+	user := req.Messages[1].Content
+	if strings.Contains(user, documentTextPlaceholder) {
+		t.Error("rendered user prompt still contains the placeholder")
+	}
+	if !strings.Contains(user, "MEMO BODY HERE") {
+		t.Error("rendered user prompt missing the document body")
 	}
 
 	// score → Rating, explanation → Description, signal passes through verbatim
@@ -332,17 +335,17 @@ func TestParseDocumentHeuristicsRejectsEmptyHeuristics(t *testing.T) {
 	}
 }
 
-func TestRenderDocumentHeuristicsPromptSubstitutes(t *testing.T) {
-	out := renderDocumentHeuristicsPrompt("HELLO WORLD")
-	if strings.Contains(out, documentTextPlaceholder) {
+func TestRenderDocumentHeuristicsUserSubstitutes(t *testing.T) {
+	user := renderDocumentHeuristicsUser("HELLO WORLD")
+	if strings.Contains(user, documentTextPlaceholder) {
 		t.Errorf("placeholder still present after render: %s", documentTextPlaceholder)
 	}
-	if !strings.Contains(out, "HELLO WORLD") {
-		t.Error("rendered prompt missing the substituted document text")
+	if !strings.Contains(user, "HELLO WORLD") {
+		t.Error("rendered user prompt missing the substituted document text")
 	}
 	for _, h := range []string{"consistency", "references", "emotive_language", "ideology_or_incentives"} {
-		if !strings.Contains(out, h) {
-			t.Errorf("rendered prompt missing heuristic name %q", h)
+		if !strings.Contains(documentHeuristicsSystemPrompt, h) {
+			t.Errorf("system prompt missing heuristic name %q", h)
 		}
 	}
 }
@@ -437,8 +440,8 @@ func TestMapleClassifierDoesNotRepairMapleQuotaMessage(t *testing.T) {
 	}
 }
 
-func TestBuildRepairRequestIncludesClassificationSchema(t *testing.T) {
-	req := buildRepairRequest("test-model", "{bad json")
+func TestBuildCaseClassificationRepairRequestIncludesSchema(t *testing.T) {
+	req := buildCaseClassificationRepairRequest("test-model", "{bad json")
 	if len(req.Messages) == 0 {
 		t.Fatal("repair request has no messages")
 	}
