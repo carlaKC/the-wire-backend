@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -46,18 +47,71 @@ func (s *mapleServer) createCaseHandler(w http.ResponseWriter, r *http.Request) 
 
 	createdAt := time.Now()
 	caseID := s.store.create(emptyCaseData(createdAt, len(documents)))
-	go s.classifyCase(caseID, createdAt, documents)
+	go s.processCase(caseID, createdAt, documents)
 	writeJSON(w, http.StatusCreated, createCaseResponse{CaseID: caseID})
 }
 
-func (s *mapleServer) classifyCase(caseID int, createdAt time.Time, documents []classifiedInput) {
-	report, err := s.classifier.Classify(context.Background(), documents, s.store.categoryCandidates())
-	if err != nil {
-		log.Printf("classification failed for case %d: %v", caseID, err)
+// processCase coordinates the two case-processing pipelines. They are
+// independent and run concurrently:
+//
+//   - classifyCase runs classification for the whole case (categorization +
+//     per-document metadata via the model).
+//   - classifyDocuments will run per-document analysis. It is currently a
+//     no-op placeholder so the wiring exists for a future prompt.
+//
+// Both goroutines `defer wg.Done()` so a panic can't leak the WaitGroup, and
+// processCase blocks on Wait before deciding the case's terminal state. A
+// failure in either pipeline marks the whole case failed; only when both
+// succeed does the classification report get committed.
+func (s *mapleServer) processCase(caseID int, createdAt time.Time, documents []classifiedInput) {
+	ctx := context.Background()
+
+	var (
+		wg              sync.WaitGroup
+		report          classificationReport
+		classifyErr     error
+		documentsErr    error
+	)
+
+	wg.Add(2)
+	go func() {
+		defer wg.Done()
+		report, classifyErr = s.classifyCase(ctx, documents)
+	}()
+	go func() {
+		defer wg.Done()
+		documentsErr = s.classifyDocuments(ctx, documents)
+	}()
+	wg.Wait()
+
+	if classifyErr != nil {
+		log.Printf("case classification failed for case %d: %v", caseID, classifyErr)
+		s.store.markFailed(caseID)
+		return
+	}
+	if documentsErr != nil {
+		log.Printf("document classification failed for case %d: %v", caseID, documentsErr)
 		s.store.markFailed(caseID)
 		return
 	}
 	s.store.replaceClassified(caseID, createdAt, documents, report)
+}
+
+// classifyCase runs the case-level classification pipeline: one model call
+// against the full document set, returning categories and per-document
+// metadata. The store-level classification candidates are passed in so the
+// model can reuse category IDs across cases.
+func (s *mapleServer) classifyCase(ctx context.Context, documents []classifiedInput) (classificationReport, error) {
+	return s.classifier.Classify(ctx, documents, s.store.categoryCandidates())
+}
+
+// classifyDocuments will run per-document analysis (heuristic prompt) once
+// that path is wired up. It currently returns nil immediately so the
+// coordinator's wiring is in place.
+func (s *mapleServer) classifyDocuments(ctx context.Context, documents []classifiedInput) error {
+	_ = ctx
+	_ = documents
+	return nil
 }
 
 func (s *mapleServer) getCaseHandler(w http.ResponseWriter, r *http.Request) {
