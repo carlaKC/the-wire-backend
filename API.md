@@ -51,12 +51,26 @@ curl http://localhost:8080/api/v1/cases/1/topics/1/documents
 - **Case** — one document dump. Created by POSTing a set of text documents. Identified by an integer.
 - **Topic** — a reusable grouping the service infers from submitted documents (e.g. "Financial irregularities"). Topic IDs are global within the running server process, so documents in a new case can be assigned to a topic created by an older case. Case endpoints return only topics represented in that case.
 - **Document** — one text file from the original submission. Each document belongs to exactly one topic.
-- **Heuristic** — a named graded signal: `{ name, rating, description }`. Appears at the **topic level** (signal across the whole topic) and the **document level** (signal for that one document). The set of heuristic names is **open**: render whatever the API returns rather than hardcoding the list.
+- **Heuristic** — a named graded signal: `{ name, signal, rating, description }`. Appears at the **topic level** (signal across the whole topic) and the **document level** (signal for that one document). Topic-level heuristics are an **open** set; document-level heuristics are a **closed** set of four (see [Document heuristics](#document-heuristics)).
 
 ## Enumerations
 
 - **Triage** (topic-level): `"high" | "medium" | "low"`. Use for visual emphasis — high = alert, medium = caution, low = informational.
-- **Heuristic rating**: `"high" | "medium" | "low"`. Polarity is heuristic-specific; for unknown heuristic names, render the rating neutrally and rely on the `description`.
+- **Heuristic rating**: `"high" | "medium" | "low"`. Polarity depends on the heuristic's `signal` (below).
+- **Heuristic signal**: `"positive" | "negative" | ""`. Tells the client whether a high `rating` is favorable or unfavorable for the submission. `positive` → high is good (e.g. high `consistency` is desirable). `negative` → high is bad (e.g. high `emotive_language` is concerning). Empty string means no directionality is asserted — render the rating neutrally and rely on the `description`. Topic-level heuristics currently always have an empty `signal`.
+
+## Document heuristics
+
+The `/cases/{case_id}/topics/{topic_id}/documents` endpoint always returns this fixed set of four heuristics per document, sourced from a dedicated per-document analysis pass (separate from the topic-classification pass):
+
+| Name | Signal | What it means |
+|------|--------|---------------|
+| `consistency` | positive | Document is internally coherent and free from obvious factual contradictions or impossible timelines. |
+| `references` | positive | Document includes concrete, potentially verifiable references (transaction IDs, dates, addresses, named events, etc.). |
+| `emotive_language` | negative | Document relies on emotional rhetoric, inflammatory wording, or personal attacks rather than factual descriptions. |
+| `ideology_or_incentives` | negative | Document appears motivated by ideological persuasion, agenda, vendetta, or financial incentive rather than reporting. |
+
+The names and signals are stable. The `rating` and `description` are produced per document by the model.
 
 ## Processing model
 
@@ -176,14 +190,14 @@ Topic detail with topic-level heuristics for this case. The `topic.id` is a glob
     "description": "The memo discusses vendor approval gaps.",
     "document_count": 1,
     "heuristics": [
-      { "name": "sensitivity", "rating": "high", "description": "Highest sensitivity level in this topic is 3." },
-      { "name": "claims", "rating": "medium", "description": "1 factual claim(s) extracted in this topic." }
+      { "name": "sensitivity", "signal": "", "rating": "high", "description": "Highest sensitivity level in this topic is 3." },
+      { "name": "claims", "signal": "", "rating": "medium", "description": "1 factual claim(s) extracted in this topic." }
     ]
   }
 }
 ```
 
-`heuristics` is an open list — render every entry the server returns. Don't assume a fixed length or fixed names.
+`heuristics` is an open list — render every entry the server returns. Don't assume a fixed length or fixed names. Topic-level heuristics currently emit an empty `signal`; render their `rating` neutrally.
 
 **Errors:**
 - `404 case_not_found`, `404 topic_not_found`.
@@ -193,6 +207,8 @@ Topic detail with topic-level heuristics for this case. The `topic.id` is a glob
 ### GET `/cases/{case_id}/topics/{topic_id}/documents`
 
 The documents from this case that are assigned to the topic, with their raw content and per-document heuristics. Even when the topic ID exists in other cases, this endpoint returns only documents from `{case_id}`.
+
+Each document carries the closed set of four per-document heuristics described in [Document heuristics](#document-heuristics). The `heuristics` array may be empty if the per-document analysis pass produced nothing for that document (e.g. while the case is still `processing`).
 
 **Response 200**:
 ```json
@@ -205,8 +221,10 @@ The documents from this case that are assigned to the topic, with their raw cont
       "filename": "memo.txt",
       "content": "INTERNAL MEMO\n\nDate: 2025-04-15\nFrom: J. Doe, Finance\nTo:   M. Smith, Procurement\n\nRe: Q2 off-cycle vendor disbursements\n…",
       "heuristics": [
-        { "name": "classification_rationale", "rating": "high", "description": "The memo discusses vendor approval gaps." },
-        { "name": "claim_supported", "rating": "high", "description": "Atlas lacked a purchase order. Evidence: no PO on file" }
+        { "name": "consistency",            "signal": "positive", "rating": "high",   "description": "Dates, parties, and dollar amounts are internally consistent." },
+        { "name": "references",             "signal": "positive", "rating": "medium", "description": "Names a vendor and an invoice number; no transaction IDs." },
+        { "name": "emotive_language",       "signal": "negative", "rating": "low",    "description": "Tone is procedural; no inflammatory language." },
+        { "name": "ideology_or_incentives", "signal": "negative", "rating": "low",    "description": "No agenda or personal incentives are evident." }
       ]
     }
   ]
