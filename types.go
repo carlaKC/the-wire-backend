@@ -8,6 +8,7 @@ const (
 
 type heuristic struct {
 	Name        string `json:"name"`
+	Signal      string `json:"signal"`
 	Rating      string `json:"rating"`
 	Description string `json:"description"`
 }

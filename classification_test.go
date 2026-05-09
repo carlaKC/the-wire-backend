@@ -181,10 +181,10 @@ func TestMapleClassifierUsesInjectedChatCompleter(t *testing.T) {
 func TestMapleClassifierClassifyDocumentReturnsParsedHeuristics(t *testing.T) {
 	completer := &recordingChatCompleter{
 		contents: []string{`{"heuristics":[
-			{"name":"consistency","score":"high","explanation":"coherent timeline"},
-			{"name":"references","score":"medium","explanation":"some dates and a PO"},
-			{"name":"emotive_language","score":"low","explanation":"factual tone"},
-			{"name":"ideology_or_incentives","score":"low","explanation":"no agenda"}
+			{"name":"consistency","signal":"positive","score":"high","explanation":"coherent timeline"},
+			{"name":"references","signal":"positive","score":"medium","explanation":"some dates and a PO"},
+			{"name":"emotive_language","signal":"negative","score":"low","explanation":"factual tone"},
+			{"name":"ideology_or_incentives","signal":"negative","score":"low","explanation":"no agenda"}
 		]}`},
 	}
 	classifier := mapleClassifier{model: "doc-model", client: completer}
@@ -224,16 +224,25 @@ func TestMapleClassifierClassifyDocumentReturnsParsedHeuristics(t *testing.T) {
 		t.Error("rendered prompt missing the document body")
 	}
 
-	// score → Rating, explanation → Description
+	// score → Rating, explanation → Description, signal passes through verbatim
 	wantRating := map[string]string{
 		"consistency":            "high",
 		"references":             "medium",
 		"emotive_language":       "low",
 		"ideology_or_incentives": "low",
 	}
+	wantSignal := map[string]string{
+		"consistency":            "positive",
+		"references":             "positive",
+		"emotive_language":       "negative",
+		"ideology_or_incentives": "negative",
+	}
 	for _, h := range hs {
 		if h.Rating != wantRating[h.Name] {
 			t.Errorf("%s rating = %q, want %q", h.Name, h.Rating, wantRating[h.Name])
+		}
+		if h.Signal != wantSignal[h.Name] {
+			t.Errorf("%s signal = %q, want %q", h.Name, h.Signal, wantSignal[h.Name])
 		}
 		if h.Description == "" {
 			t.Errorf("%s description (mapped from explanation) is empty", h.Name)
@@ -248,18 +257,18 @@ func TestMapleClassifierClassifyDocumentRepairsInvalidJSON(t *testing.T) {
 	// returns valid heuristics on the second try.
 	brokenFirstResponse := `{
 		"heuristics": [
-			{"name":"consistency","score":"medium","explanation":"ok"},
-			{"name":"references","score":"low","explanation": No verifiable references."}
+			{"name":"consistency","signal":"positive","score":"medium","explanation":"ok"},
+			{"name":"references","signal":"positive","score":"low","explanation": No verifiable references."}
 		]
 	}`
 	completer := &recordingChatCompleter{
 		contents: []string{
 			brokenFirstResponse,
 			`{"heuristics":[
-				{"name":"consistency","score":"medium","explanation":"ok"},
-				{"name":"references","score":"low","explanation":"no verifiable references"},
-				{"name":"emotive_language","score":"low","explanation":"calm"},
-				{"name":"ideology_or_incentives","score":"low","explanation":"none"}
+				{"name":"consistency","signal":"positive","score":"medium","explanation":"ok"},
+				{"name":"references","signal":"positive","score":"low","explanation":"no verifiable references"},
+				{"name":"emotive_language","signal":"negative","score":"low","explanation":"calm"},
+				{"name":"ideology_or_incentives","signal":"negative","score":"low","explanation":"none"}
 			]}`,
 		},
 	}
@@ -285,7 +294,7 @@ func TestMapleClassifierClassifyDocumentRepairsInvalidJSON(t *testing.T) {
 		t.Fatal("repair request had no messages")
 	}
 	system := repair.Messages[0].Content
-	for _, want := range []string{"consistency", "references", "emotive_language", "ideology_or_incentives", `"score"`, `"explanation"`} {
+	for _, want := range []string{"consistency", "references", "emotive_language", "ideology_or_incentives", `"signal"`, `"score"`, `"explanation"`} {
 		if !strings.Contains(system, want) {
 			t.Errorf("repair system prompt missing %q (schema must be pinned). got: %s", want, system)
 		}
@@ -294,8 +303,8 @@ func TestMapleClassifierClassifyDocumentRepairsInvalidJSON(t *testing.T) {
 
 func TestParseDocumentHeuristicsMapsFields(t *testing.T) {
 	hs, err := parseDocumentHeuristics(`{"heuristics":[
-		{"name":"consistency","score":"high","explanation":"coherent"},
-		{"name":"references","score":"low","explanation":"vague"}
+		{"name":"consistency","signal":"positive","score":"high","explanation":"coherent"},
+		{"name":"references","signal":"positive","score":"low","explanation":"vague"}
 	]}`)
 	if err != nil {
 		t.Fatalf("parse: %v", err)
@@ -303,10 +312,10 @@ func TestParseDocumentHeuristicsMapsFields(t *testing.T) {
 	if len(hs) != 2 {
 		t.Fatalf("heuristics = %d, want 2", len(hs))
 	}
-	if hs[0].Name != "consistency" || hs[0].Rating != "high" || hs[0].Description != "coherent" {
+	if hs[0].Name != "consistency" || hs[0].Signal != "positive" || hs[0].Rating != "high" || hs[0].Description != "coherent" {
 		t.Errorf("hs[0] = %#v", hs[0])
 	}
-	if hs[1].Name != "references" || hs[1].Rating != "low" || hs[1].Description != "vague" {
+	if hs[1].Name != "references" || hs[1].Signal != "positive" || hs[1].Rating != "low" || hs[1].Description != "vague" {
 		t.Errorf("hs[1] = %#v", hs[1])
 	}
 }

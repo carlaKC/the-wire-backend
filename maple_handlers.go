@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -201,6 +202,9 @@ func (s *mapleServer) getTopicHandler(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, resp)
 }
 
+// getTopicDocumentsHandler returns every document the case has classified
+// under a single topic, with its content and heuristic scores. Documents are
+// ordered by their stable per-case ID.
 func (s *mapleServer) getTopicDocumentsHandler(w http.ResponseWriter, r *http.Request) {
 	caseID, data, ok := s.lookupCase(w, r)
 	if !ok {
@@ -210,13 +214,23 @@ func (s *mapleServer) getTopicDocumentsHandler(w http.ResponseWriter, r *http.Re
 	if !ok {
 		return
 	}
-	resp, ok := data.documents[topicID]
+	byTopic, ok := data.documents[topicID]
 	if !ok {
 		writeError(w, http.StatusNotFound, "topic_not_found", "no topic with id "+strconv.Itoa(topicID)+" in case "+strconv.Itoa(caseID))
 		return
 	}
-	resp.CaseID = caseID
-	writeJSON(w, http.StatusOK, resp)
+
+	out := make([]documentResponse, len(byTopic.Documents))
+	copy(out, byTopic.Documents)
+	sort.Slice(out, func(i, j int) bool {
+		return out[i].ID < out[j].ID
+	})
+
+	writeJSON(w, http.StatusOK, topicDocumentsResponse{
+		CaseID:    caseID,
+		TopicID:   topicID,
+		Documents: out,
+	})
 }
 
 func (s *mapleServer) lookupCase(w http.ResponseWriter, r *http.Request) (int, caseData, bool) {

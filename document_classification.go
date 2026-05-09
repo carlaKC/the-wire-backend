@@ -29,6 +29,7 @@ type heuristicsReport struct {
 
 type llmDocumentHeuristic struct {
 	Name        string `json:"name"`
+	Signal      string `json:"signal"`
 	Score       string `json:"score"`
 	Explanation string `json:"explanation"`
 }
@@ -62,11 +63,11 @@ func buildDocumentHeuristicsRepairRequest(model, invalidContent string) chatRequ
 
 {
   "heuristics": [
-    {"name": "<string>", "score": "high|medium|low", "explanation": "<string>"}
+    {"name": "<string>", "signal": "positive|negative", "score": "high|medium|low", "explanation": "<string>"}
   ]
 }
 
-The "heuristics" array MUST contain exactly four entries, with names: consistency, references, emotive_language, ideology_or_incentives. Preserve every field's value as accurately as you can from the input — if a field's value is itself broken (missing quotes around a string, unquoted text), interpret it conservatively and quote it.
+The "heuristics" array MUST contain exactly four entries, with names: consistency, references, emotive_language, ideology_or_incentives. The "signal" field is fixed per name: consistency=positive, references=positive, emotive_language=negative, ideology_or_incentives=negative. Preserve every field's value as accurately as you can from the input — if a field's value is itself broken (missing quotes around a string, unquoted text), interpret it conservatively and quote it.
 
 Return ONLY the corrected JSON object. No commentary, no markdown, no extra top-level fields.`,
 			},
@@ -124,6 +125,7 @@ func parseDocumentHeuristics(content string) ([]heuristic, error) {
 	for _, h := range report.Heuristics {
 		out = append(out, heuristic{
 			Name:        h.Name,
+			Signal:      h.Signal,
 			Rating:      h.Score,
 			Description: h.Explanation,
 		})

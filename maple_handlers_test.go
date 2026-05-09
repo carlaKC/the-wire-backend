@@ -103,9 +103,6 @@ func TestMapleCreateCaseStartsProcessingAndCompletes(t *testing.T) {
 	if got := len(docs.Documents); got != 1 {
 		t.Fatalf("topic document count = %d, want 1", got)
 	}
-	if got := len(docs.Documents[0].Heuristics); got == 0 {
-		t.Fatal("document heuristics were empty")
-	}
 }
 
 func TestProcessCaseAttachesPerDocumentHeuristics(t *testing.T) {
@@ -142,6 +139,95 @@ func TestProcessCaseAttachesPerDocumentHeuristics(t *testing.T) {
 		if !containsHeuristicNamed(got, name) {
 			t.Errorf("document heuristics missing %q (from ClassifyDocument). got: %v", name, heuristicNames(got))
 		}
+	}
+}
+
+func TestGetTopicDocumentsReturnsOnlyDocumentsForThatTopic(t *testing.T) {
+	classifier := newControlledClassifier(classificationReport{Documents: []classifiedDocument{
+		classifiedDoc("memo.txt", classifiedTopic{
+			Title: "Procurement",
+			Topic: "procurement",
+		}),
+		classifiedDoc("invoice.txt", classifiedTopic{
+			Title: "Finance",
+			Topic: "finance",
+		}),
+	}}, nil)
+	classifier.documentReport = []heuristic{
+		{Name: "consistency", Signal: "positive", Rating: "high", Description: "coherent"},
+		{Name: "references", Signal: "positive", Rating: "medium", Description: "PO referenced"},
+		{Name: "emotive_language", Signal: "negative", Rating: "low", Description: "factual"},
+		{Name: "ideology_or_incentives", Signal: "negative", Rating: "low", Description: "no agenda"},
+	}
+	srv := newMapleServer(classifier)
+
+	caseID := postMapleCase(t, srv, []docInput{
+		{Filename: "memo.txt", Content: "memo body"},
+		{Filename: "invoice.txt", Content: "invoice body"},
+	})
+	complete := waitMapleStatus(t, srv, caseID, statusComplete)
+	if got := len(complete.Topics); got != 2 {
+		t.Fatalf("topic count = %d, want 2", got)
+	}
+
+	// Pick the Procurement topic and verify the endpoint only returns that
+	// topic's documents (memo.txt), not the Finance one (invoice.txt).
+	var procurementID int
+	for _, c := range complete.Topics {
+		if c.Title == "Procurement" {
+			procurementID = c.ID
+		}
+	}
+	if procurementID == 0 {
+		t.Fatal("could not find Procurement topic id")
+	}
+
+	resp := getMapleTopicDocuments(t, srv, caseID, procurementID)
+	if resp.CaseID != caseID {
+		t.Errorf("case_id = %d, want %d", resp.CaseID, caseID)
+	}
+	if resp.TopicID != procurementID {
+		t.Errorf("topic_id = %d, want %d", resp.TopicID, procurementID)
+	}
+	if got := len(resp.Documents); got != 1 {
+		t.Fatalf("documents = %d, want 1 (filtered to topic); got: %#v", got, resp.Documents)
+	}
+	if resp.Documents[0].Filename != "memo.txt" {
+		t.Errorf("document filename = %q, want memo.txt", resp.Documents[0].Filename)
+	}
+	if !containsHeuristicNamed(resp.Documents[0].Heuristics, "consistency") {
+		t.Errorf("document missing prompt heuristic %q", "consistency")
+	}
+}
+
+func TestGetTopicDocumentsUnknownCaseReturns404(t *testing.T) {
+	srv := newMapleServer(newControlledClassifier(classificationReport{}, nil))
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/cases/999/topics/1/documents", nil)
+	req.SetPathValue("case_id", "999")
+	req.SetPathValue("topic_id", "1")
+	rec := httptest.NewRecorder()
+	srv.getTopicDocumentsHandler(rec, req)
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("status = %d, want 404; body = %s", rec.Code, rec.Body.String())
+	}
+}
+
+func TestGetTopicDocumentsUnknownTopicReturns404(t *testing.T) {
+	classifier := newControlledClassifier(classificationReport{Documents: []classifiedDocument{
+		classifiedDoc("memo.txt", classifiedTopic{Title: "Procurement", Topic: "procurement"}),
+	}}, nil)
+	srv := newMapleServer(classifier)
+
+	caseID := postMapleCase(t, srv, []docInput{{Filename: "memo.txt", Content: "memo body"}})
+	waitMapleStatus(t, srv, caseID, statusComplete)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/cases/"+strconv.Itoa(caseID)+"/topics/9999/documents", nil)
+	req.SetPathValue("case_id", strconv.Itoa(caseID))
+	req.SetPathValue("topic_id", "9999")
+	rec := httptest.NewRecorder()
+	srv.getTopicDocumentsHandler(rec, req)
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("status = %d, want 404; body = %s", rec.Code, rec.Body.String())
 	}
 }
 
