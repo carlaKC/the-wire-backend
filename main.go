@@ -55,6 +55,13 @@ func withCORS(next http.Handler) http.Handler {
 	})
 }
 
+func envOrDefault(name, fallback string) string {
+	if value := os.Getenv(name); value != "" {
+		return value
+	}
+	return fallback
+}
+
 func registerMockHandlers(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/cases", mockCreateCaseHandler)
 	mux.HandleFunc("GET /api/v1/cases/{case_id}", mockGetCaseHandler)
@@ -70,6 +77,7 @@ func registerNomockHandlers(mux *http.ServeMux, srv *server) {
 }
 
 func main() {
+	maple := flag.Bool("maple", false, "use Maple-backed in-memory classification")
 	nomock := flag.Bool("nomock", false, "use real in-memory implementation instead of hardcoded mock data")
 	flag.Parse()
 
@@ -81,7 +89,20 @@ func main() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthcheck", healthHandler)
 
-	if *nomock {
+	if *maple {
+		client := mapleClient{
+			baseURL: envOrDefault("MAPLE_BASE_URL", defaultMapleBaseURL),
+			apiKey:  os.Getenv("MAPLE_API_KEY"),
+			httpClient: &http.Client{
+				Timeout: 60 * time.Second,
+			},
+		}
+		classifier := mapleClassifier{
+			model:  envOrDefault("MAPLE_MODEL", defaultMapleModel),
+			client: client,
+		}
+		registerMapleHandlers(mux, newMapleServer(classifier))
+	} else if *nomock {
 		s := newStore(defaultDocConcurrency, defaultCaseConcurrency, defaultDocDelay, defaultCatDelay)
 		srv := &server{store: s, ctx: context.Background()}
 		registerNomockHandlers(mux, srv)
@@ -90,7 +111,7 @@ func main() {
 	}
 
 	addr := ":" + port
-	log.Printf("listening on %s (nomock=%v)", addr, *nomock)
+	log.Printf("listening on %s (maple=%v, nomock=%v)", addr, *maple, *nomock)
 	if err := http.ListenAndServe(addr, withCORS(mux)); err != nil {
 		log.Fatal(err)
 	}
