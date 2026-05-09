@@ -187,6 +187,7 @@ func (s *classifiedCaseStore) buildCaseDataLocked(createdAt time.Time, inputs []
 			ID:         nextDocumentID,
 			Filename:   filename,
 			Content:    input.Content,
+			Filtered:   shouldFilterDocument(heuristicsByDoc[classified.ID]),
 			Heuristics: heuristicsByDoc[classified.ID],
 		})
 		nextDocumentID++
@@ -395,6 +396,22 @@ func ratingFromValidationMix(statuses map[string]int) string {
 		return "medium"
 	}
 	return "high"
+}
+
+func shouldFilterDocument(heuristics []heuristic) bool {
+	negativeCount := 0
+	for _, h := range heuristics {
+		if normalizedTopic(h.Signal) != "negative" {
+			continue
+		}
+		negativeCount++
+		switch normalizedTopic(h.Rating) {
+		case "medium", "high":
+		default:
+			return false
+		}
+	}
+	return negativeCount > 0
 }
 
 func ratingFromClaimCount(count int) string {

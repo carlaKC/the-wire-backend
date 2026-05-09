@@ -136,6 +136,80 @@ func TestReplaceClassifiedMergesNewTopicsByTitle(t *testing.T) {
 	}
 }
 
+func TestReplaceClassifiedMarksDocumentFilteredWhenAllNegativeHeuristicsAreMediumOrHigh(t *testing.T) {
+	store := newClassifiedCaseStore()
+	createdAt := time.Date(2026, 5, 9, 12, 0, 0, 0, time.UTC)
+	caseID := store.create(emptyCaseData(createdAt, 1))
+
+	store.replaceClassified(caseID, createdAt, []classifiedInput{
+		{ID: "bad.txt", Filename: "bad.txt", Content: "Bad file."},
+	}, classificationReport{Documents: []classifiedDocument{
+		classifiedDoc("bad.txt", classifiedTopic{Title: "Procurement", Topic: "procurement"}),
+	}}, map[string][]heuristic{
+		"bad.txt": {
+			{Name: "consistency", Signal: "positive", Rating: "low"},
+			{Name: "references", Signal: "positive", Rating: "low"},
+			{Name: "emotive_language", Signal: "negative", Rating: "medium"},
+			{Name: "ideology_or_incentives", Signal: "negative", Rating: "high"},
+		},
+	})
+
+	data, ok := store.get(caseID)
+	if !ok {
+		t.Fatal("case was not stored")
+	}
+	topicID := data.summary.Topics[0].ID
+	doc := data.documents[topicID].Documents[0]
+	if !doc.Filtered {
+		t.Fatal("document filtered = false, want true")
+	}
+}
+
+func TestShouldFilterDocumentIgnoresPositiveHeuristics(t *testing.T) {
+	tests := []struct {
+		name       string
+		heuristics []heuristic
+		want       bool
+	}{
+		{
+			name: "positive high does not filter when negative low",
+			heuristics: []heuristic{
+				{Name: "consistency", Signal: "positive", Rating: "high"},
+				{Name: "references", Signal: "positive", Rating: "high"},
+				{Name: "emotive_language", Signal: "negative", Rating: "low"},
+				{Name: "ideology_or_incentives", Signal: "negative", Rating: "medium"},
+			},
+			want: false,
+		},
+		{
+			name: "all negative medium or high filters",
+			heuristics: []heuristic{
+				{Name: "consistency", Signal: "positive", Rating: "low"},
+				{Name: "references", Signal: "positive", Rating: "low"},
+				{Name: "emotive_language", Signal: "negative", Rating: "medium"},
+				{Name: "ideology_or_incentives", Signal: "negative", Rating: "high"},
+			},
+			want: true,
+		},
+		{
+			name: "no negative signals does not filter",
+			heuristics: []heuristic{
+				{Name: "consistency", Signal: "positive", Rating: "high"},
+				{Name: "references", Signal: "positive", Rating: "high"},
+			},
+			want: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := shouldFilterDocument(tt.heuristics); got != tt.want {
+				t.Fatalf("shouldFilterDocument() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
 func classifiedDoc(id string, topic classifiedTopic) classifiedDocument {
 	return classifiedDocument{
 		ID:    id,

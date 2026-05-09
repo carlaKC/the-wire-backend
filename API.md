@@ -72,6 +72,8 @@ The `/cases/{case_id}/topics/{topic_id}/documents` endpoint always returns this 
 
 The names and signals are stable. The `rating` and `description` are produced per document by the model.
 
+Document responses include `filtered`, a boolean derived only from negative-signal heuristics. `filtered` is `true` when every negative heuristic has a `rating` of `medium` or `high`; positive heuristics do not affect this flag. If any negative heuristic is `low`, or if there are no negative heuristics, `filtered` is `false`.
+
 ## Processing model
 
 `POST /cases` returns the case ID immediately. Analysis runs asynchronously, and the case progresses through `status` values on the case summary:
@@ -210,6 +212,8 @@ The documents from this case that are assigned to the topic, with their raw cont
 
 Each document carries the closed set of four per-document heuristics described in [Document heuristics](#document-heuristics). The `heuristics` array may be empty if the per-document analysis pass produced nothing for that document (e.g. while the case is still `processing`).
 
+`filtered` indicates that the document's negative-signal heuristics all rated `medium` or `high`, so clients can exclude or de-emphasize it when presenting the topic group.
+
 **Response 200**:
 ```json
 {
@@ -220,6 +224,7 @@ Each document carries the closed set of four per-document heuristics described i
       "id": 1,
       "filename": "memo.txt",
       "content": "INTERNAL MEMO\n\nDate: 2025-04-15\nFrom: J. Doe, Finance\nTo:   M. Smith, Procurement\n\nRe: Q2 off-cycle vendor disbursements\n…",
+      "filtered": false,
       "heuristics": [
         { "name": "consistency",            "signal": "positive", "rating": "high",   "description": "Dates, parties, and dollar amounts are internally consistent." },
         { "name": "references",             "signal": "positive", "rating": "medium", "description": "Names a vendor and an invoice number; no transaction IDs." },
@@ -307,6 +312,7 @@ export interface DocumentRecord {
   id: number;
   filename: string;
   content: string;
+  filtered: boolean;
   heuristics: Heuristic[];
 }
 
