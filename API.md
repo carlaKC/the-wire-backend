@@ -78,7 +78,7 @@ The names and signals are stable. The `rating` and `description` are produced pe
 
 | Status | Meaning |
 |--------|---------|
-| `processing` | Analysis is in flight. `topics` may be empty or partial. Per-document `heuristics` may be empty. Topic endpoints (`/topics/{tid}` and `/topics/{tid}/documents`) return `404 topic_not_found` until the topic is materialized. |
+| `processing` | Analysis is in flight. `topics` may be empty or partial. Per-document `heuristics` may be empty (the per-document analysis pass runs concurrently with topic classification and may not have produced output yet). Topic endpoints (`/topics/{tid}` and `/topics/{tid}/documents`) return `404 topic_not_found` until the topic is materialized. |
 | `complete` | Analysis finished. All data populated. |
 | `failed` | Analysis errored. The case is terminal; further polling will not change the result. |
 
@@ -265,9 +265,11 @@ All `4xx`/`5xx` responses share this shape:
 
 ```ts
 type Rating = "high" | "medium" | "low";
+type Signal = "positive" | "negative" | "";
 
 export interface Heuristic {
   name: string;
+  signal: Signal;
   rating: Rating;
   description: string;
 }
