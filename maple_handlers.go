@@ -47,6 +47,7 @@ func (s *mapleServer) createCaseHandler(w http.ResponseWriter, r *http.Request) 
 
 	createdAt := time.Now()
 	caseID := s.store.create(emptyCaseData(createdAt, len(documents)))
+	log.Printf("case %d: submitted (%d documents)", caseID, len(documents))
 	go s.processCase(caseID, createdAt, documents)
 	writeJSON(w, http.StatusCreated, createCaseResponse{CaseID: caseID})
 }
@@ -65,36 +66,48 @@ func (s *mapleServer) createCaseHandler(w http.ResponseWriter, r *http.Request) 
 // succeed does the classification report get committed.
 func (s *mapleServer) processCase(caseID int, createdAt time.Time, documents []classifiedInput) {
 	ctx := context.Background()
+	start := time.Now()
 
 	var (
-		wg              sync.WaitGroup
-		report          classificationReport
-		classifyErr     error
-		documentsErr    error
+		wg           sync.WaitGroup
+		report       classificationReport
+		classifyErr  error
+		documentsErr error
 	)
 
 	wg.Add(2)
 	go func() {
 		defer wg.Done()
+		stageStart := time.Now()
+		log.Printf("case %d: classifyCase started", caseID)
 		report, classifyErr = s.classifyCase(ctx, documents)
+		if classifyErr == nil {
+			log.Printf("case %d: classifyCase completed in %s", caseID, time.Since(stageStart).Round(time.Millisecond))
+		}
 	}()
 	go func() {
 		defer wg.Done()
+		stageStart := time.Now()
+		log.Printf("case %d: classifyDocuments started", caseID)
 		documentsErr = s.classifyDocuments(ctx, documents)
+		if documentsErr == nil {
+			log.Printf("case %d: classifyDocuments completed in %s", caseID, time.Since(stageStart).Round(time.Millisecond))
+		}
 	}()
 	wg.Wait()
 
 	if classifyErr != nil {
-		log.Printf("case classification failed for case %d: %v", caseID, classifyErr)
+		log.Printf("case %d: classifyCase failed: %v", caseID, classifyErr)
 		s.store.markFailed(caseID)
 		return
 	}
 	if documentsErr != nil {
-		log.Printf("document classification failed for case %d: %v", caseID, documentsErr)
+		log.Printf("case %d: classifyDocuments failed: %v", caseID, documentsErr)
 		s.store.markFailed(caseID)
 		return
 	}
 	s.store.replaceClassified(caseID, createdAt, documents, report)
+	log.Printf("case %d: complete (elapsed %s)", caseID, time.Since(start).Round(time.Millisecond))
 }
 
 // classifyCase runs the case-level classification pipeline: one model call
