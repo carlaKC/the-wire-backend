@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -11,6 +12,8 @@ import (
 	"sync"
 	"time"
 )
+
+const maxConcurrentDocumentClassifications = 4
 
 type mapleServer struct {
 	store      *classifiedCaseStore
@@ -69,10 +72,11 @@ func (s *mapleServer) processCase(caseID int, createdAt time.Time, documents []c
 	start := time.Now()
 
 	var (
-		wg           sync.WaitGroup
-		report       classificationReport
-		classifyErr  error
-		documentsErr error
+		wg              sync.WaitGroup
+		report          classificationReport
+		classifyErr     error
+		heuristicsByDoc map[string][]heuristic
+		documentsErr    error
 	)
 
 	wg.Add(2)
@@ -89,9 +93,9 @@ func (s *mapleServer) processCase(caseID int, createdAt time.Time, documents []c
 		defer wg.Done()
 		stageStart := time.Now()
 		log.Printf("case %d: classifyDocuments started", caseID)
-		documentsErr = s.classifyDocuments(ctx, documents)
+		heuristicsByDoc, documentsErr = s.classifyDocuments(ctx, documents)
 		if documentsErr == nil {
-			log.Printf("case %d: classifyDocuments completed in %s", caseID, time.Since(stageStart).Round(time.Millisecond))
+			log.Printf("case %d: classifyDocuments completed in %s (%d documents)", caseID, time.Since(stageStart).Round(time.Millisecond), len(documents))
 		}
 	}()
 	wg.Wait()
@@ -106,7 +110,7 @@ func (s *mapleServer) processCase(caseID int, createdAt time.Time, documents []c
 		s.store.markFailed(caseID)
 		return
 	}
-	s.store.replaceClassified(caseID, createdAt, documents, report)
+	s.store.replaceClassified(caseID, createdAt, documents, report, heuristicsByDoc)
 	log.Printf("case %d: complete (elapsed %s)", caseID, time.Since(start).Round(time.Millisecond))
 }
 
@@ -118,13 +122,55 @@ func (s *mapleServer) classifyCase(ctx context.Context, documents []classifiedIn
 	return s.classifier.Classify(ctx, documents, s.store.categoryCandidates())
 }
 
-// classifyDocuments will run per-document analysis (heuristic prompt) once
-// that path is wired up. It currently returns nil immediately so the
-// coordinator's wiring is in place.
-func (s *mapleServer) classifyDocuments(ctx context.Context, documents []classifiedInput) error {
-	_ = ctx
-	_ = documents
-	return nil
+// classifyDocuments fans out one ClassifyDocument call per document via the
+// classifier interface. Calls run concurrently, bounded by a semaphore. The
+// result map is keyed by classifiedInput.ID so the caller can attach each
+// document's heuristics to its wire response.
+//
+// Per-document failures are collected and joined; any failure fails the
+// whole stage (and so the whole case). This matches our policy elsewhere:
+// document-level heuristics come from the model or not at all.
+func (s *mapleServer) classifyDocuments(ctx context.Context, documents []classifiedInput) (map[string][]heuristic, error) {
+	out := make(map[string][]heuristic, len(documents))
+	var (
+		wg   sync.WaitGroup
+		mu   sync.Mutex
+		errs []error
+	)
+	sem := make(chan struct{}, maxConcurrentDocumentClassifications)
+
+	for _, d := range documents {
+		wg.Add(1)
+		go func(d classifiedInput) {
+			defer wg.Done()
+			select {
+			case sem <- struct{}{}:
+			case <-ctx.Done():
+				mu.Lock()
+				errs = append(errs, fmt.Errorf("doc %s: %w", d.ID, ctx.Err()))
+				mu.Unlock()
+				return
+			}
+			defer func() { <-sem }()
+
+			hs, err := s.classifier.ClassifyDocument(ctx, d)
+			if err != nil {
+				mu.Lock()
+				errs = append(errs, fmt.Errorf("doc %s: %w", d.ID, err))
+				mu.Unlock()
+				return
+			}
+			mu.Lock()
+			out[d.ID] = hs
+			mu.Unlock()
+		}(d)
+	}
+	wg.Wait()
+
+	if len(errs) > 0 {
+		return nil, errors.Join(errs...)
+	}
+	return out, nil
 }
 
 func (s *mapleServer) getCaseHandler(w http.ResponseWriter, r *http.Request) {

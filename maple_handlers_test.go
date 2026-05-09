@@ -108,6 +108,77 @@ func TestMapleCreateCaseStartsProcessingAndCompletes(t *testing.T) {
 	}
 }
 
+func TestProcessCaseAttachesPerDocumentHeuristics(t *testing.T) {
+	classifier := newControlledClassifier(classificationReport{Documents: []classifiedDocument{
+		classifiedDoc("memo.txt", classifiedCategory{
+			Title:       "Procurement",
+			Description: "Vendor approval and purchasing issues.",
+			Category:    "procurement",
+			Confidence:  0.95,
+		}),
+	}}, nil)
+	classifier.documentReport = []heuristic{
+		{Name: "consistency", Rating: "high", Description: "coherent timeline"},
+		{Name: "references", Rating: "medium", Description: "PO referenced"},
+		{Name: "emotive_language", Rating: "low", Description: "factual tone"},
+		{Name: "ideology_or_incentives", Rating: "low", Description: "no agenda"},
+	}
+	srv := newMapleServer(classifier)
+
+	caseID := postMapleCase(t, srv, []docInput{{Filename: "memo.txt", Content: "Vendor Atlas lacked a purchase order."}})
+	complete := waitMapleStatus(t, srv, caseID, statusComplete)
+	if got := len(complete.Categories); got != 1 {
+		t.Fatalf("category count = %d, want 1", got)
+	}
+	categoryID := complete.Categories[0].ID
+
+	docs := getMapleCategoryDocuments(t, srv, caseID, categoryID)
+	if got := len(docs.Documents); got != 1 {
+		t.Fatalf("document count = %d, want 1", got)
+	}
+	got := docs.Documents[0].Heuristics
+	wantPromptNames := []string{"consistency", "references", "emotive_language", "ideology_or_incentives"}
+	for _, name := range wantPromptNames {
+		if !containsHeuristicNamed(got, name) {
+			t.Errorf("document heuristics missing %q (from ClassifyDocument). got: %v", name, heuristicNames(got))
+		}
+	}
+}
+
+func TestProcessCaseFailsCaseWhenClassifyDocumentFails(t *testing.T) {
+	classifier := newControlledClassifier(classificationReport{Documents: []classifiedDocument{
+		classifiedDoc("memo.txt", classifiedCategory{
+			Title:    "Procurement",
+			Category: "procurement",
+		}),
+	}}, nil)
+	classifier.documentErr = errors.New("simulated per-doc failure")
+	srv := newMapleServer(classifier)
+
+	caseID := postMapleCase(t, srv, []docInput{{Filename: "memo.txt", Content: "memo body"}})
+	failed := waitMapleStatus(t, srv, caseID, statusFailed)
+	if failed.Status != statusFailed {
+		t.Fatalf("status = %q, want %q", failed.Status, statusFailed)
+	}
+}
+
+func containsHeuristicNamed(hs []heuristic, name string) bool {
+	for _, h := range hs {
+		if h.Name == name {
+			return true
+		}
+	}
+	return false
+}
+
+func heuristicNames(hs []heuristic) []string {
+	out := make([]string, len(hs))
+	for i, h := range hs {
+		out[i] = h.Name
+	}
+	return out
+}
+
 func TestMapleClassifierFailureMarksCaseFailed(t *testing.T) {
 	classifier := newControlledClassifier(classificationReport{}, errors.New("maple unavailable"))
 	srv := newMapleServer(classifier)

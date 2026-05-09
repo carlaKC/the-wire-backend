@@ -19,7 +19,7 @@ func TestReplaceClassifiedReusesGlobalCategoryAcrossCases(t *testing.T) {
 			Category:    "procurement",
 			Confidence:  0.95,
 		}),
-	}})
+	}}, nil)
 
 	caseOne, ok := store.get(caseOneID)
 	if !ok {
@@ -51,7 +51,7 @@ func TestReplaceClassifiedReusesGlobalCategoryAcrossCases(t *testing.T) {
 			Category:   "procurement",
 			Confidence: 0.92,
 		}),
-	}})
+	}}, nil)
 
 	caseTwo, ok := store.get(caseTwoID)
 	if !ok {
@@ -92,7 +92,7 @@ func TestReplaceClassifiedFallsBackWhenModelReturnsUnknownCategoryID(t *testing.
 			Category:    "foreign_influence",
 			Confidence:  0.88,
 		}),
-	}})
+	}}, nil)
 
 	data, ok := store.get(caseID)
 	if !ok {
@@ -121,7 +121,7 @@ func TestReplaceClassifiedMergesNewCategoriesByTitle(t *testing.T) {
 	}, classificationReport{Documents: []classifiedDocument{
 		classifiedDoc("one.txt", classifiedCategory{Title: "Procurement", Description: "Purchasing issues.", Category: "procurement"}),
 		classifiedDoc("two.txt", classifiedCategory{Title: " procurement ", Description: "Vendor issues.", Category: "procurement"}),
-	}})
+	}}, nil)
 
 	data, ok := store.get(caseID)
 	if !ok {

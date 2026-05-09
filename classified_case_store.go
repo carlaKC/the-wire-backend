@@ -64,11 +64,11 @@ func (s *classifiedCaseStore) create(data caseData) int {
 	return id
 }
 
-func (s *classifiedCaseStore) replaceClassified(id int, createdAt time.Time, inputs []classifiedInput, report classificationReport) {
+func (s *classifiedCaseStore) replaceClassified(id int, createdAt time.Time, inputs []classifiedInput, report classificationReport, heuristicsByDoc map[string][]heuristic) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	data := s.buildCaseDataLocked(createdAt, inputs, report)
+	data := s.buildCaseDataLocked(createdAt, inputs, report, heuristicsByDoc)
 	data.summary.CaseID = id
 	for categoryID, detail := range data.details {
 		detail.CaseID = id
@@ -130,7 +130,7 @@ func emptyCaseData(createdAt time.Time, documentCount int) caseData {
 	}
 }
 
-func (s *classifiedCaseStore) buildCaseDataLocked(createdAt time.Time, inputs []classifiedInput, report classificationReport) caseData {
+func (s *classifiedCaseStore) buildCaseDataLocked(createdAt time.Time, inputs []classifiedInput, report classificationReport, heuristicsByDoc map[string][]heuristic) caseData {
 	inputByID := map[string]classifiedInput{}
 	for _, input := range inputs {
 		inputByID[input.ID] = input
@@ -183,11 +183,15 @@ func (s *classifiedCaseStore) buildCaseDataLocked(createdAt time.Time, inputs []
 		if filename == "" {
 			filename = classified.ID
 		}
+		docHeuristics := documentHeuristics(classified)
+		if extra, ok := heuristicsByDoc[classified.ID]; ok && len(extra) > 0 {
+			docHeuristics = append(docHeuristics, extra...)
+		}
 		category.documents = append(category.documents, documentResponse{
 			ID:         nextDocumentID,
 			Filename:   filename,
 			Content:    input.Content,
-			Heuristics: documentHeuristics(classified),
+			Heuristics: docHeuristics,
 		})
 		nextDocumentID++
 	}
