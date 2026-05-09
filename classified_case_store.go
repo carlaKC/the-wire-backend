@@ -183,15 +183,11 @@ func (s *classifiedCaseStore) buildCaseDataLocked(createdAt time.Time, inputs []
 		if filename == "" {
 			filename = classified.ID
 		}
-		docHeuristics := documentHeuristics(classified)
-		if extra, ok := heuristicsByDoc[classified.ID]; ok && len(extra) > 0 {
-			docHeuristics = append(docHeuristics, extra...)
-		}
 		topic.documents = append(topic.documents, documentResponse{
 			ID:         nextDocumentID,
 			Filename:   filename,
 			Content:    input.Content,
-			Heuristics: docHeuristics,
+			Heuristics: heuristicsByDoc[classified.ID],
 		})
 		nextDocumentID++
 	}
@@ -291,46 +287,6 @@ func (s *classifiedCaseStore) updateGlobalTopicStatsLocked(topic *globalTopic, d
 		topic.statuses[status]++
 		topic.maxLevel = max(topic.maxLevel, claim.Sensitivity.Level)
 	}
-}
-
-func documentHeuristics(document classifiedDocument) []heuristic {
-	out := []heuristic{}
-	if document.Rationale != "" {
-		out = append(out, heuristic{
-			Name:        "classification_rationale",
-			Rating:      triageFromSensitivity(document.Sensitivity.Level),
-			Description: document.Rationale,
-		})
-	}
-	if document.DocumentType.Topic != "" {
-		out = append(out, heuristic{
-			Name:        "document_type",
-			Rating:      ratingFromConfidence(document.DocumentType.Confidence),
-			Description: "Classified as " + humanTitle(document.DocumentType.Topic) + ".",
-		})
-	}
-	for _, claim := range document.Claims {
-		description := claim.Claim
-		if claim.Evidence != "" {
-			description += " Evidence: " + claim.Evidence
-		}
-		if claim.Validation.Rationale != "" {
-			description += " Validation: " + claim.Validation.Rationale
-		}
-		out = append(out, heuristic{
-			Name:        "claim_" + validationStatus(claim.Validation.Status),
-			Rating:      ratingFromValidation(claim.Validation.Status),
-			Description: description,
-		})
-	}
-	if len(out) == 0 {
-		out = append(out, heuristic{
-			Name:        "classification",
-			Rating:      triageFromSensitivity(document.Sensitivity.Level),
-			Description: "Document was classified without additional rationale.",
-		})
-	}
-	return out
 }
 
 func topicHeuristics(claimCount, maxSensitivity int, statuses map[string]int, docTypes map[string]int) []heuristic {

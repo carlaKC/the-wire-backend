@@ -103,9 +103,6 @@ func TestMapleCreateCaseStartsProcessingAndCompletes(t *testing.T) {
 	if got := len(docs.Documents); got != 1 {
 		t.Fatalf("topic document count = %d, want 1", got)
 	}
-	if got := len(docs.Documents[0].Heuristics); got == 0 {
-		t.Fatal("document heuristics were empty")
-	}
 }
 
 func TestProcessCaseAttachesPerDocumentHeuristics(t *testing.T) {
