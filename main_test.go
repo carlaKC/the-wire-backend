@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-func TestReplaceClassifiedReusesGlobalCategoryAcrossCases(t *testing.T) {
+func TestReplaceClassifiedReusesGlobalTopicAcrossCases(t *testing.T) {
 	store := newClassifiedCaseStore()
 	createdAt := time.Date(2026, 5, 9, 12, 0, 0, 0, time.UTC)
 
@@ -13,10 +13,10 @@ func TestReplaceClassifiedReusesGlobalCategoryAcrossCases(t *testing.T) {
 	store.replaceClassified(caseOneID, createdAt, []classifiedInput{
 		{ID: "memo.txt", Filename: "memo.txt", Content: "Vendor Atlas lacked a purchase order."},
 	}, classificationReport{Documents: []classifiedDocument{
-		classifiedDoc("memo.txt", classifiedCategory{
+		classifiedDoc("memo.txt", classifiedTopic{
 			Title:       "Procurement",
 			Description: "Vendor approval and purchasing issues.",
-			Category:    "procurement",
+			Topic:       "procurement",
 			Confidence:  0.95,
 		}),
 	}}, nil)
@@ -25,30 +25,30 @@ func TestReplaceClassifiedReusesGlobalCategoryAcrossCases(t *testing.T) {
 	if !ok {
 		t.Fatal("case one was not stored")
 	}
-	if got := len(caseOne.summary.Categories); got != 1 {
-		t.Fatalf("case one category count = %d, want 1", got)
+	if got := len(caseOne.summary.Topics); got != 1 {
+		t.Fatalf("case one topic count = %d, want 1", got)
 	}
-	categoryID := caseOne.summary.Categories[0].ID
-	if categoryID == 0 {
-		t.Fatal("case one category id was not assigned")
+	topicID := caseOne.summary.Topics[0].ID
+	if topicID == 0 {
+		t.Fatal("case one topic id was not assigned")
 	}
 
-	candidates := store.categoryCandidates()
+	candidates := store.topicCandidates()
 	if got := len(candidates); got != 1 {
 		t.Fatalf("candidate count = %d, want 1", got)
 	}
-	if candidates[0].ID != categoryID {
-		t.Fatalf("candidate id = %d, want %d", candidates[0].ID, categoryID)
+	if candidates[0].ID != topicID {
+		t.Fatalf("candidate id = %d, want %d", candidates[0].ID, topicID)
 	}
 
 	caseTwoID := store.create(emptyCaseData(createdAt, 1))
 	store.replaceClassified(caseTwoID, createdAt, []classifiedInput{
 		{ID: "invoice.txt", Filename: "invoice.txt", Content: "The Atlas invoice was missing a purchase order."},
 	}, classificationReport{Documents: []classifiedDocument{
-		classifiedDoc("invoice.txt", classifiedCategory{
-			ID:         categoryID,
+		classifiedDoc("invoice.txt", classifiedTopic{
+			ID:         topicID,
 			Title:      "Procurement",
-			Category:   "procurement",
+			Topic:      "procurement",
 			Confidence: 0.92,
 		}),
 	}}, nil)
@@ -57,15 +57,15 @@ func TestReplaceClassifiedReusesGlobalCategoryAcrossCases(t *testing.T) {
 	if !ok {
 		t.Fatal("case two was not stored")
 	}
-	if got := len(caseTwo.summary.Categories); got != 1 {
-		t.Fatalf("case two category count = %d, want 1", got)
+	if got := len(caseTwo.summary.Topics); got != 1 {
+		t.Fatalf("case two topic count = %d, want 1", got)
 	}
-	if got := caseTwo.summary.Categories[0].ID; got != categoryID {
-		t.Fatalf("case two category id = %d, want reused id %d", got, categoryID)
+	if got := caseTwo.summary.Topics[0].ID; got != topicID {
+		t.Fatalf("case two topic id = %d, want reused id %d", got, topicID)
 	}
 
-	caseOneDocs := caseOne.documents[categoryID].Documents
-	caseTwoDocs := caseTwo.documents[categoryID].Documents
+	caseOneDocs := caseOne.documents[topicID].Documents
+	caseTwoDocs := caseTwo.documents[topicID].Documents
 	if got := len(caseOneDocs); got != 1 {
 		t.Fatalf("case one docs = %d, want 1", got)
 	}
@@ -77,7 +77,7 @@ func TestReplaceClassifiedReusesGlobalCategoryAcrossCases(t *testing.T) {
 	}
 }
 
-func TestReplaceClassifiedFallsBackWhenModelReturnsUnknownCategoryID(t *testing.T) {
+func TestReplaceClassifiedFallsBackWhenModelReturnsUnknownTopicID(t *testing.T) {
 	store := newClassifiedCaseStore()
 	createdAt := time.Date(2026, 5, 9, 12, 0, 0, 0, time.UTC)
 	caseID := store.create(emptyCaseData(createdAt, 1))
@@ -85,11 +85,11 @@ func TestReplaceClassifiedFallsBackWhenModelReturnsUnknownCategoryID(t *testing.
 	store.replaceClassified(caseID, createdAt, []classifiedInput{
 		{ID: "briefing.txt", Filename: "briefing.txt", Content: "Briefing on foreign lobbying activity."},
 	}, classificationReport{Documents: []classifiedDocument{
-		classifiedDoc("briefing.txt", classifiedCategory{
+		classifiedDoc("briefing.txt", classifiedTopic{
 			ID:          99,
 			Title:       "Foreign Influence",
 			Description: "Foreign lobbying and influence issues.",
-			Category:    "foreign_influence",
+			Topic:       "foreign_influence",
 			Confidence:  0.88,
 		}),
 	}}, nil)
@@ -98,19 +98,19 @@ func TestReplaceClassifiedFallsBackWhenModelReturnsUnknownCategoryID(t *testing.
 	if !ok {
 		t.Fatal("case was not stored")
 	}
-	if got := len(data.summary.Categories); got != 1 {
-		t.Fatalf("category count = %d, want 1", got)
+	if got := len(data.summary.Topics); got != 1 {
+		t.Fatalf("topic count = %d, want 1", got)
 	}
-	category := data.summary.Categories[0]
-	if category.ID == 99 {
-		t.Fatal("unknown model category id was accepted")
+	topic := data.summary.Topics[0]
+	if topic.ID == 99 {
+		t.Fatal("unknown model topic id was accepted")
 	}
-	if category.Title != "Foreign Influence" {
-		t.Fatalf("category title = %q, want Foreign Influence", category.Title)
+	if topic.Title != "Foreign Influence" {
+		t.Fatalf("topic title = %q, want Foreign Influence", topic.Title)
 	}
 }
 
-func TestReplaceClassifiedMergesNewCategoriesByTitle(t *testing.T) {
+func TestReplaceClassifiedMergesNewTopicsByTitle(t *testing.T) {
 	store := newClassifiedCaseStore()
 	createdAt := time.Date(2026, 5, 9, 12, 0, 0, 0, time.UTC)
 	caseID := store.create(emptyCaseData(createdAt, 2))
@@ -119,33 +119,33 @@ func TestReplaceClassifiedMergesNewCategoriesByTitle(t *testing.T) {
 		{ID: "one.txt", Filename: "one.txt", Content: "First procurement note."},
 		{ID: "two.txt", Filename: "two.txt", Content: "Second procurement note."},
 	}, classificationReport{Documents: []classifiedDocument{
-		classifiedDoc("one.txt", classifiedCategory{Title: "Procurement", Description: "Purchasing issues.", Category: "procurement"}),
-		classifiedDoc("two.txt", classifiedCategory{Title: " procurement ", Description: "Vendor issues.", Category: "procurement"}),
+		classifiedDoc("one.txt", classifiedTopic{Title: "Procurement", Description: "Purchasing issues.", Topic: "procurement"}),
+		classifiedDoc("two.txt", classifiedTopic{Title: " procurement ", Description: "Vendor issues.", Topic: "procurement"}),
 	}}, nil)
 
 	data, ok := store.get(caseID)
 	if !ok {
 		t.Fatal("case was not stored")
 	}
-	if got := len(data.summary.Categories); got != 1 {
-		t.Fatalf("category count = %d, want merged category", got)
+	if got := len(data.summary.Topics); got != 1 {
+		t.Fatalf("topic count = %d, want merged topic", got)
 	}
-	categoryID := data.summary.Categories[0].ID
-	if got := len(data.documents[categoryID].Documents); got != 2 {
-		t.Fatalf("merged category document count = %d, want 2", got)
+	topicID := data.summary.Topics[0].ID
+	if got := len(data.documents[topicID].Documents); got != 2 {
+		t.Fatalf("merged topic document count = %d, want 2", got)
 	}
 }
 
-func classifiedDoc(id string, topic classifiedCategory) classifiedDocument {
+func classifiedDoc(id string, topic classifiedTopic) classifiedDocument {
 	return classifiedDocument{
 		ID:    id,
 		Topic: topic,
-		DocumentType: classifiedCategory{
-			Category:   "memo",
+		DocumentType: classifiedTopic{
+			Topic:      "memo",
 			Confidence: 0.8,
 		},
 		Sensitivity: classifiedSensitivity{Level: 2, Label: "sensitive", Confidence: 0.8},
-		Rationale:   "Document matches the assigned category.",
+		Rationale:   "Document matches the assigned topic.",
 		Claims: []classifiedClaim{
 			{
 				ID:         "claim-1",

@@ -11,11 +11,11 @@ import (
 
 type caseData struct {
 	summary   caseSummaryResponse
-	details   map[int]categoryDetailResponse
-	documents map[int]categoryDocumentsResponse
+	details   map[int]topicDetailResponse
+	documents map[int]topicDocumentsResponse
 }
 
-type globalCategory struct {
+type globalTopic struct {
 	id            int
 	title         string
 	description   string
@@ -27,21 +27,21 @@ type globalCategory struct {
 }
 
 type classifiedCaseStore struct {
-	mu             sync.RWMutex
-	nextCaseID     int
-	nextCategoryID int
-	cases          map[int]caseData
-	categories     map[int]*globalCategory
-	categoryTitles map[string]int
+	mu          sync.RWMutex
+	nextCaseID  int
+	nextTopicID int
+	cases       map[int]caseData
+	topics      map[int]*globalTopic
+	topicTitles map[string]int
 }
 
 func newClassifiedCaseStore() *classifiedCaseStore {
 	return &classifiedCaseStore{
-		nextCaseID:     1,
-		nextCategoryID: 1,
-		cases:          map[int]caseData{},
-		categories:     map[int]*globalCategory{},
-		categoryTitles: map[string]int{},
+		nextCaseID:  1,
+		nextTopicID: 1,
+		cases:       map[int]caseData{},
+		topics:      map[int]*globalTopic{},
+		topicTitles: map[string]int{},
 	}
 }
 
@@ -52,13 +52,13 @@ func (s *classifiedCaseStore) create(data caseData) int {
 	id := s.nextCaseID
 	s.nextCaseID++
 	data.summary.CaseID = id
-	for categoryID, detail := range data.details {
+	for topicID, detail := range data.details {
 		detail.CaseID = id
-		data.details[categoryID] = detail
+		data.details[topicID] = detail
 	}
-	for categoryID, documents := range data.documents {
+	for topicID, documents := range data.documents {
 		documents.CaseID = id
-		data.documents[categoryID] = documents
+		data.documents[topicID] = documents
 	}
 	s.cases[id] = data
 	return id
@@ -70,13 +70,13 @@ func (s *classifiedCaseStore) replaceClassified(id int, createdAt time.Time, inp
 
 	data := s.buildCaseDataLocked(createdAt, inputs, report, heuristicsByDoc)
 	data.summary.CaseID = id
-	for categoryID, detail := range data.details {
+	for topicID, detail := range data.details {
 		detail.CaseID = id
-		data.details[categoryID] = detail
+		data.details[topicID] = detail
 	}
-	for categoryID, documents := range data.documents {
+	for topicID, documents := range data.documents {
 		documents.CaseID = id
-		data.documents[categoryID] = documents
+		data.documents[topicID] = documents
 	}
 	s.cases[id] = data
 }
@@ -92,16 +92,16 @@ func (s *classifiedCaseStore) markFailed(id int) {
 	s.cases[id] = data
 }
 
-func (s *classifiedCaseStore) categoryCandidates() []categoryCandidate {
+func (s *classifiedCaseStore) topicCandidates() []topicCandidate {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	out := make([]categoryCandidate, 0, len(s.categories))
-	for _, category := range s.categories {
-		out = append(out, categoryCandidate{
-			ID:          category.id,
-			Title:       category.title,
-			Description: category.description,
+	out := make([]topicCandidate, 0, len(s.topics))
+	for _, topic := range s.topics {
+		out = append(out, topicCandidate{
+			ID:          topic.id,
+			Title:       topic.title,
+			Description: topic.description,
 		})
 	}
 	sort.Slice(out, func(i, j int) bool {
@@ -123,10 +123,10 @@ func emptyCaseData(createdAt time.Time, documentCount int) caseData {
 			CreatedAt:     createdAt.UTC().Format(time.RFC3339),
 			Status:        statusProcessing,
 			DocumentCount: documentCount,
-			Categories:    []categorySummary{},
+			Topics:        []topicSummary{},
 		},
-		details:   map[int]categoryDetailResponse{},
-		documents: map[int]categoryDocumentsResponse{},
+		details:   map[int]topicDetailResponse{},
+		documents: map[int]topicDocumentsResponse{},
 	}
 }
 
@@ -136,7 +136,7 @@ func (s *classifiedCaseStore) buildCaseDataLocked(createdAt time.Time, inputs []
 		inputByID[input.ID] = input
 	}
 
-	type categoryBuild struct {
+	type topicBuild struct {
 		id          int
 		title       string
 		description string
@@ -147,15 +147,15 @@ func (s *classifiedCaseStore) buildCaseDataLocked(createdAt time.Time, inputs []
 		docTypes    map[string]int
 	}
 
-	categories := map[int]*categoryBuild{}
+	topics := map[int]*topicBuild{}
 	order := []int{}
 	nextDocumentID := 1
 
 	for _, classified := range report.Documents {
-		global := s.resolveCategoryLocked(classified.Topic, classified.Rationale)
-		s.updateGlobalCategoryStatsLocked(global, classified)
-		if _, ok := categories[global.id]; !ok {
-			categories[global.id] = &categoryBuild{
+		global := s.resolveTopicLocked(classified.Topic, classified.Rationale)
+		s.updateGlobalTopicStatsLocked(global, classified)
+		if _, ok := topics[global.id]; !ok {
+			topics[global.id] = &topicBuild{
 				id:          global.id,
 				title:       global.title,
 				description: global.description,
@@ -166,16 +166,16 @@ func (s *classifiedCaseStore) buildCaseDataLocked(createdAt time.Time, inputs []
 			order = append(order, global.id)
 		}
 
-		category := categories[global.id]
-		category.maxLevel = max(category.maxLevel, classified.Sensitivity.Level)
-		category.claimCount += len(classified.Claims)
-		if classified.DocumentType.Category != "" {
-			category.docTypes[normalizedCategory(classified.DocumentType.Category)]++
+		topic := topics[global.id]
+		topic.maxLevel = max(topic.maxLevel, classified.Sensitivity.Level)
+		topic.claimCount += len(classified.Claims)
+		if classified.DocumentType.Topic != "" {
+			topic.docTypes[normalizedTopic(classified.DocumentType.Topic)]++
 		}
 		for _, claim := range classified.Claims {
 			status := validationStatus(claim.Validation.Status)
-			category.statuses[status]++
-			category.maxLevel = max(category.maxLevel, claim.Sensitivity.Level)
+			topic.statuses[status]++
+			topic.maxLevel = max(topic.maxLevel, claim.Sensitivity.Level)
 		}
 
 		input := inputByID[classified.ID]
@@ -187,7 +187,7 @@ func (s *classifiedCaseStore) buildCaseDataLocked(createdAt time.Time, inputs []
 		if extra, ok := heuristicsByDoc[classified.ID]; ok && len(extra) > 0 {
 			docHeuristics = append(docHeuristics, extra...)
 		}
-		category.documents = append(category.documents, documentResponse{
+		topic.documents = append(topic.documents, documentResponse{
 			ID:         nextDocumentID,
 			Filename:   filename,
 			Content:    input.Content,
@@ -196,37 +196,37 @@ func (s *classifiedCaseStore) buildCaseDataLocked(createdAt time.Time, inputs []
 		nextDocumentID++
 	}
 
-	summaries := make([]categorySummary, 0, len(order))
-	details := map[int]categoryDetailResponse{}
-	documents := map[int]categoryDocumentsResponse{}
+	summaries := make([]topicSummary, 0, len(order))
+	details := map[int]topicDetailResponse{}
+	documents := map[int]topicDocumentsResponse{}
 
 	for _, id := range order {
-		category := categories[id]
-		if category.description == "" {
-			category.description = fmt.Sprintf("%d document(s) categorized as %s.", len(category.documents), category.title)
+		topic := topics[id]
+		if topic.description == "" {
+			topic.description = fmt.Sprintf("%d document(s) grouped under topic %s.", len(topic.documents), topic.title)
 		}
-		triage := triageFromSensitivity(category.maxLevel)
+		triage := triageFromSensitivity(topic.maxLevel)
 
-		summaries = append(summaries, categorySummary{
-			ID:          category.id,
-			Title:       category.title,
+		summaries = append(summaries, topicSummary{
+			ID:          topic.id,
+			Title:       topic.title,
 			Triage:      triage,
-			Description: category.description,
+			Description: topic.description,
 		})
 
-		details[category.id] = categoryDetailResponse{
-			Category: categoryDetail{
-				ID:            category.id,
-				Title:         category.title,
+		details[topic.id] = topicDetailResponse{
+			Topic: topicDetail{
+				ID:            topic.id,
+				Title:         topic.title,
 				Triage:        triage,
-				Description:   category.description,
-				DocumentCount: len(category.documents),
-				Heuristics:    categoryHeuristics(category.claimCount, category.maxLevel, category.statuses, category.docTypes),
+				Description:   topic.description,
+				DocumentCount: len(topic.documents),
+				Heuristics:    topicHeuristics(topic.claimCount, topic.maxLevel, topic.statuses, topic.docTypes),
 			},
 		}
-		documents[category.id] = categoryDocumentsResponse{
-			CategoryID: category.id,
-			Documents:  category.documents,
+		documents[topic.id] = topicDocumentsResponse{
+			TopicID:   topic.id,
+			Documents: topic.documents,
 		}
 	}
 
@@ -235,27 +235,27 @@ func (s *classifiedCaseStore) buildCaseDataLocked(createdAt time.Time, inputs []
 			CreatedAt:     createdAt.UTC().Format(time.RFC3339),
 			Status:        statusComplete,
 			DocumentCount: len(inputs),
-			Categories:    summaries,
+			Topics:        summaries,
 		},
 		details:   details,
 		documents: documents,
 	}
 }
 
-func (s *classifiedCaseStore) resolveCategoryLocked(topic classifiedCategory, fallbackDescription string) *globalCategory {
+func (s *classifiedCaseStore) resolveTopicLocked(topic classifiedTopic, fallbackDescription string) *globalTopic {
 	if topic.ID > 0 {
-		if category, ok := s.categories[topic.ID]; ok {
-			return category
+		if existing, ok := s.topics[topic.ID]; ok {
+			return existing
 		}
 	}
 
 	title := strings.TrimSpace(topic.Title)
 	if title == "" {
-		title = humanTitle(topic.Category)
+		title = humanTitle(topic.Topic)
 	}
-	key := categoryKey(title)
-	if id, ok := s.categoryTitles[key]; ok {
-		return s.categories[id]
+	key := topicKey(title)
+	if id, ok := s.topicTitles[key]; ok {
+		return s.topics[id]
 	}
 
 	description := strings.TrimSpace(topic.Description)
@@ -263,33 +263,33 @@ func (s *classifiedCaseStore) resolveCategoryLocked(topic classifiedCategory, fa
 		description = strings.TrimSpace(fallbackDescription)
 	}
 	if description == "" {
-		description = "Documents categorized as " + title + "."
+		description = "Documents grouped under topic " + title + "."
 	}
 
-	category := &globalCategory{
-		id:          s.nextCategoryID,
+	created := &globalTopic{
+		id:          s.nextTopicID,
 		title:       title,
 		description: description,
 		statuses:    map[string]int{},
 		docTypes:    map[string]int{},
 	}
-	s.nextCategoryID++
-	s.categories[category.id] = category
-	s.categoryTitles[key] = category.id
-	return category
+	s.nextTopicID++
+	s.topics[created.id] = created
+	s.topicTitles[key] = created.id
+	return created
 }
 
-func (s *classifiedCaseStore) updateGlobalCategoryStatsLocked(category *globalCategory, document classifiedDocument) {
-	category.documentCount++
-	category.maxLevel = max(category.maxLevel, document.Sensitivity.Level)
-	category.claimCount += len(document.Claims)
-	if document.DocumentType.Category != "" {
-		category.docTypes[normalizedCategory(document.DocumentType.Category)]++
+func (s *classifiedCaseStore) updateGlobalTopicStatsLocked(topic *globalTopic, document classifiedDocument) {
+	topic.documentCount++
+	topic.maxLevel = max(topic.maxLevel, document.Sensitivity.Level)
+	topic.claimCount += len(document.Claims)
+	if document.DocumentType.Topic != "" {
+		topic.docTypes[normalizedTopic(document.DocumentType.Topic)]++
 	}
 	for _, claim := range document.Claims {
 		status := validationStatus(claim.Validation.Status)
-		category.statuses[status]++
-		category.maxLevel = max(category.maxLevel, claim.Sensitivity.Level)
+		topic.statuses[status]++
+		topic.maxLevel = max(topic.maxLevel, claim.Sensitivity.Level)
 	}
 }
 
@@ -302,11 +302,11 @@ func documentHeuristics(document classifiedDocument) []heuristic {
 			Description: document.Rationale,
 		})
 	}
-	if document.DocumentType.Category != "" {
+	if document.DocumentType.Topic != "" {
 		out = append(out, heuristic{
 			Name:        "document_type",
 			Rating:      ratingFromConfidence(document.DocumentType.Confidence),
-			Description: "Classified as " + humanTitle(document.DocumentType.Category) + ".",
+			Description: "Classified as " + humanTitle(document.DocumentType.Topic) + ".",
 		})
 	}
 	for _, claim := range document.Claims {
@@ -333,17 +333,17 @@ func documentHeuristics(document classifiedDocument) []heuristic {
 	return out
 }
 
-func categoryHeuristics(claimCount, maxSensitivity int, statuses map[string]int, docTypes map[string]int) []heuristic {
+func topicHeuristics(claimCount, maxSensitivity int, statuses map[string]int, docTypes map[string]int) []heuristic {
 	out := []heuristic{
 		{
 			Name:        "sensitivity",
 			Rating:      triageFromSensitivity(maxSensitivity),
-			Description: "Highest sensitivity level in this category is " + strconv.Itoa(maxSensitivity) + ".",
+			Description: "Highest sensitivity level in this topic is " + strconv.Itoa(maxSensitivity) + ".",
 		},
 		{
 			Name:        "claims",
 			Rating:      ratingFromClaimCount(claimCount),
-			Description: strconv.Itoa(claimCount) + " factual claim(s) extracted in this category.",
+			Description: strconv.Itoa(claimCount) + " factual claim(s) extracted in this topic.",
 		},
 	}
 	if len(statuses) > 0 {
@@ -363,20 +363,20 @@ func categoryHeuristics(claimCount, maxSensitivity int, statuses map[string]int,
 	return out
 }
 
-func normalizedCategory(category string) string {
-	category = strings.TrimSpace(strings.ToLower(category))
-	if category == "" {
+func normalizedTopic(topic string) string {
+	topic = strings.TrimSpace(strings.ToLower(topic))
+	if topic == "" {
 		return "other"
 	}
-	return category
+	return topic
 }
 
-func categoryKey(title string) string {
+func topicKey(title string) string {
 	return strings.Join(strings.Fields(strings.ToLower(strings.TrimSpace(title))), " ")
 }
 
 func humanTitle(value string) string {
-	value = strings.ReplaceAll(normalizedCategory(value), "_", " ")
+	value = strings.ReplaceAll(normalizedTopic(value), "_", " ")
 	words := strings.Fields(value)
 	for i, word := range words {
 		if len(word) == 0 {

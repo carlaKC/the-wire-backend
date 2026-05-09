@@ -57,8 +57,8 @@ func envOrDefault(name, fallback string) string {
 func registerMockHandlers(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/cases", mockCreateCaseHandler)
 	mux.HandleFunc("GET /api/v1/cases/{case_id}", mockGetCaseHandler)
-	mux.HandleFunc("GET /api/v1/cases/{case_id}/categories/{category_id}", mockGetCategoryHandler)
-	mux.HandleFunc("GET /api/v1/cases/{case_id}/categories/{category_id}/documents", mockGetCategoryDocumentsHandler)
+	mux.HandleFunc("GET /api/v1/cases/{case_id}/topics/{topic_id}", mockGetTopicHandler)
+	mux.HandleFunc("GET /api/v1/cases/{case_id}/topics/{topic_id}/documents", mockGetTopicDocumentsHandler)
 }
 
 func main() {

@@ -27,8 +27,8 @@ func newMapleServer(classifier classifier) *mapleServer {
 func registerMapleHandlers(mux *http.ServeMux, srv *mapleServer) {
 	mux.HandleFunc("POST /api/v1/cases", srv.createCaseHandler)
 	mux.HandleFunc("GET /api/v1/cases/{case_id}", srv.getCaseHandler)
-	mux.HandleFunc("GET /api/v1/cases/{case_id}/categories/{category_id}", srv.getCategoryHandler)
-	mux.HandleFunc("GET /api/v1/cases/{case_id}/categories/{category_id}/documents", srv.getCategoryDocumentsHandler)
+	mux.HandleFunc("GET /api/v1/cases/{case_id}/topics/{topic_id}", srv.getTopicHandler)
+	mux.HandleFunc("GET /api/v1/cases/{case_id}/topics/{topic_id}/documents", srv.getTopicDocumentsHandler)
 }
 
 func (s *mapleServer) createCaseHandler(w http.ResponseWriter, r *http.Request) {
@@ -58,7 +58,7 @@ func (s *mapleServer) createCaseHandler(w http.ResponseWriter, r *http.Request) 
 // processCase coordinates the two case-processing pipelines. They are
 // independent and run concurrently:
 //
-//   - classifyCase runs classification for the whole case (categorization +
+//   - classifyCase runs classification for the whole case (topic assignment +
 //     per-document metadata via the model).
 //   - classifyDocuments will run per-document analysis. It is currently a
 //     no-op placeholder so the wiring exists for a future prompt.
@@ -115,11 +115,11 @@ func (s *mapleServer) processCase(caseID int, createdAt time.Time, documents []c
 }
 
 // classifyCase runs the case-level classification pipeline: one model call
-// against the full document set, returning categories and per-document
+// against the full document set, returning topics and per-document
 // metadata. The store-level classification candidates are passed in so the
-// model can reuse category IDs across cases.
+// model can reuse topic IDs across cases.
 func (s *mapleServer) classifyCase(ctx context.Context, documents []classifiedInput) (classificationReport, error) {
-	return s.classifier.Classify(ctx, documents, s.store.categoryCandidates())
+	return s.classifier.Classify(ctx, documents, s.store.topicCandidates())
 }
 
 // classifyDocuments fans out one ClassifyDocument call per document via the
@@ -183,36 +183,36 @@ func (s *mapleServer) getCaseHandler(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, summary)
 }
 
-func (s *mapleServer) getCategoryHandler(w http.ResponseWriter, r *http.Request) {
+func (s *mapleServer) getTopicHandler(w http.ResponseWriter, r *http.Request) {
 	caseID, data, ok := s.lookupCase(w, r)
 	if !ok {
 		return
 	}
-	categoryID, ok := parseID(w, r, "category_id", "category_not_found")
+	topicID, ok := parseID(w, r, "topic_id", "topic_not_found")
 	if !ok {
 		return
 	}
-	resp, ok := data.details[categoryID]
+	resp, ok := data.details[topicID]
 	if !ok {
-		writeError(w, http.StatusNotFound, "category_not_found", "no category with id "+strconv.Itoa(categoryID)+" in case "+strconv.Itoa(caseID))
+		writeError(w, http.StatusNotFound, "topic_not_found", "no topic with id "+strconv.Itoa(topicID)+" in case "+strconv.Itoa(caseID))
 		return
 	}
 	resp.CaseID = caseID
 	writeJSON(w, http.StatusOK, resp)
 }
 
-func (s *mapleServer) getCategoryDocumentsHandler(w http.ResponseWriter, r *http.Request) {
+func (s *mapleServer) getTopicDocumentsHandler(w http.ResponseWriter, r *http.Request) {
 	caseID, data, ok := s.lookupCase(w, r)
 	if !ok {
 		return
 	}
-	categoryID, ok := parseID(w, r, "category_id", "category_not_found")
+	topicID, ok := parseID(w, r, "topic_id", "topic_not_found")
 	if !ok {
 		return
 	}
-	resp, ok := data.documents[categoryID]
+	resp, ok := data.documents[topicID]
 	if !ok {
-		writeError(w, http.StatusNotFound, "category_not_found", "no category with id "+strconv.Itoa(categoryID)+" in case "+strconv.Itoa(caseID))
+		writeError(w, http.StatusNotFound, "topic_not_found", "no topic with id "+strconv.Itoa(topicID)+" in case "+strconv.Itoa(caseID))
 		return
 	}
 	resp.CaseID = caseID

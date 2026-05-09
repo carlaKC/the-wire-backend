@@ -23,7 +23,7 @@ var errMapleQuotaExhausted = errors.New("maple quota exhausted: 电量不足，�
 var invalidNumericIDPattern = regexp.MustCompile(`("id"\s*:\s*)([^0-9"\{\[\]tfn\-\s][^,}\]\r\n]*)`)
 
 type classifier interface {
-	Classify(ctx context.Context, documents []classifiedInput, existingCategories []categoryCandidate) (classificationReport, error)
+	Classify(ctx context.Context, documents []classifiedInput, existingTopics []topicCandidate) (classificationReport, error)
 	ClassifyDocument(ctx context.Context, document classifiedInput) ([]heuristic, error)
 }
 
@@ -44,22 +44,22 @@ type classificationReport struct {
 
 type classifiedDocument struct {
 	ID           string                `json:"id"`
-	Topic        classifiedCategory    `json:"topic"`
-	DocumentType classifiedCategory    `json:"document_type"`
+	Topic        classifiedTopic       `json:"topic"`
+	DocumentType classifiedTopic       `json:"document_type"`
 	Sensitivity  classifiedSensitivity `json:"sensitivity"`
 	Rationale    string                `json:"rationale"`
 	Claims       []classifiedClaim     `json:"claims"`
 }
 
-type classifiedCategory struct {
+type classifiedTopic struct {
 	ID          int     `json:"id,omitempty"`
 	Title       string  `json:"title,omitempty"`
 	Description string  `json:"description,omitempty"`
-	Category    string  `json:"category"`
+	Topic       string  `json:"topic"`
 	Confidence  float64 `json:"confidence"`
 }
 
-type categoryCandidate struct {
+type topicCandidate struct {
 	ID          int    `json:"id"`
 	Title       string `json:"title"`
 	Description string `json:"description"`
@@ -74,7 +74,7 @@ type classifiedSensitivity struct {
 type classifiedClaim struct {
 	ID          string                `json:"id"`
 	Claim       string                `json:"claim"`
-	Category    string                `json:"category"`
+	Topic       string                `json:"topic"`
 	Confidence  float64               `json:"confidence"`
 	Evidence    string                `json:"evidence"`
 	Validation  classifiedValidation  `json:"validation"`
@@ -141,7 +141,7 @@ type chatResponse struct {
 	} `json:"error,omitempty"`
 }
 
-func (c mapleClassifier) Classify(ctx context.Context, documents []classifiedInput, existingCategories []categoryCandidate) (classificationReport, error) {
+func (c mapleClassifier) Classify(ctx context.Context, documents []classifiedInput, existingTopics []topicCandidate) (classificationReport, error) {
 	if c.client == nil {
 		return classificationReport{}, errors.New("maple client is required")
 	}
@@ -161,12 +161,12 @@ func (c mapleClassifier) Classify(ctx context.Context, documents []classifiedInp
 	if err != nil {
 		return classificationReport{}, err
 	}
-	categoryJSON, err := json.MarshalIndent(existingCategories, "", "  ")
+	topicJSON, err := json.MarshalIndent(existingTopics, "", "  ")
 	if err != nil {
 		return classificationReport{}, err
 	}
 
-	content, err := c.client.ChatCompletion(ctx, buildClassificationRequest(c.model, string(documentJSON), string(categoryJSON)))
+	content, err := c.client.ChatCompletion(ctx, buildClassificationRequest(c.model, string(documentJSON), string(topicJSON)))
 	if err != nil {
 		return classificationReport{}, err
 	}
@@ -192,7 +192,7 @@ func (c mapleClassifier) Classify(ctx context.Context, documents []classifiedInp
 	return report, nil
 }
 
-func buildClassificationRequest(model, documentJSON, categoryJSON string) chatRequest {
+func buildClassificationRequest(model, documentJSON, topicJSON string) chatRequest {
 	return chatRequest{
 		Model:          model,
 		Temperature:    0,
@@ -200,14 +200,14 @@ func buildClassificationRequest(model, documentJSON, categoryJSON string) chatRe
 		Messages: []chatMessage{
 			{
 				Role: "system",
-				Content: "Extract factual claims from each document, assign each document to one reusable category, and validate each claim against the source document. " +
-					"Return one strict JSON object with a documents array. When an existing category fits, set topic.id to its integer id. " +
-					"When no existing category fits, set topic.id to 0 and provide a concise topic.title and topic.description. " +
+				Content: "Extract factual claims from each document, assign each document to one reusable topic, and validate each claim against the source document. " +
+					"Return one strict JSON object with a documents array. When an existing topic fits, set topic.id to its integer id. " +
+					"When no existing topic fits, set topic.id to 0 and provide a concise topic.title and topic.description. " +
 					"All id fields that are numeric in the schema must be JSON numbers, never words or translated text.",
 			},
 			{
 				Role:    "user",
-				Content: "Existing categories:\n" + categoryJSON + "\n\nDocuments:\n" + documentJSON,
+				Content: "Existing topics:\n" + topicJSON + "\n\nDocuments:\n" + documentJSON,
 			},
 		},
 	}
@@ -224,8 +224,8 @@ func buildRepairRequest(model, invalidContent string) chatRequest {
 				Content: "Repair malformed JSON into strict valid JSON that matches the classification schema. " +
 					"Return only one corrected JSON object with a documents array. " +
 					"Each document must include id, topic, document_type, sensitivity, rationale, and claims. " +
-					"Each claim must be an object with id, claim, category, confidence, evidence, validation, sensitivity, and flags. " +
-					"Use topic.id=0 unless an existing integer category id is present. " +
+					"Each claim must be an object with id, claim, topic, confidence, evidence, validation, sensitivity, and flags. " +
+					"Use topic.id=0 unless an existing integer topic id is present. " +
 					"All id fields that are numeric in the schema must be JSON numbers, never words or translated text.",
 			},
 			{

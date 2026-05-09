@@ -13,8 +13,8 @@ import (
 )
 
 type classifierCall struct {
-	documents          []classifiedInput
-	existingCategories []categoryCandidate
+	documents      []classifiedInput
+	existingTopics []topicCandidate
 }
 
 type controlledClassifier struct {
@@ -36,10 +36,10 @@ func newControlledClassifier(report classificationReport, err error) *controlled
 	}
 }
 
-func (c *controlledClassifier) Classify(_ context.Context, documents []classifiedInput, existingCategories []categoryCandidate) (classificationReport, error) {
+func (c *controlledClassifier) Classify(_ context.Context, documents []classifiedInput, existingTopics []topicCandidate) (classificationReport, error) {
 	c.calls <- classifierCall{
-		documents:          append([]classifiedInput{}, documents...),
-		existingCategories: append([]categoryCandidate{}, existingCategories...),
+		documents:      append([]classifiedInput{}, documents...),
+		existingTopics: append([]topicCandidate{}, existingTopics...),
 	}
 	if c.release != nil {
 		<-c.release
@@ -59,10 +59,10 @@ func (c *controlledClassifier) ClassifyDocument(_ context.Context, document clas
 
 func TestMapleCreateCaseStartsProcessingAndCompletes(t *testing.T) {
 	classifier := newControlledClassifier(classificationReport{Documents: []classifiedDocument{
-		classifiedDoc("memo.txt", classifiedCategory{
+		classifiedDoc("memo.txt", classifiedTopic{
 			Title:       "Procurement",
 			Description: "Vendor approval and purchasing issues.",
-			Category:    "procurement",
+			Topic:       "procurement",
 			Confidence:  0.95,
 		}),
 	}}, nil)
@@ -84,24 +84,24 @@ func TestMapleCreateCaseStartsProcessingAndCompletes(t *testing.T) {
 	if processing.Status != statusProcessing {
 		t.Fatalf("initial status = %q, want %q", processing.Status, statusProcessing)
 	}
-	if got := len(processing.Categories); got != 0 {
-		t.Fatalf("initial category count = %d, want 0", got)
+	if got := len(processing.Topics); got != 0 {
+		t.Fatalf("initial topic count = %d, want 0", got)
 	}
 
 	close(classifier.release)
 	complete := waitMapleStatus(t, srv, caseID, statusComplete)
-	if got := len(complete.Categories); got != 1 {
-		t.Fatalf("complete category count = %d, want 1", got)
+	if got := len(complete.Topics); got != 1 {
+		t.Fatalf("complete topic count = %d, want 1", got)
 	}
-	categoryID := complete.Categories[0].ID
+	topicID := complete.Topics[0].ID
 
-	detail := getMapleCategory(t, srv, caseID, categoryID)
-	if got := len(detail.Category.Heuristics); got == 0 {
-		t.Fatal("category heuristics were empty")
+	detail := getMapleTopic(t, srv, caseID, topicID)
+	if got := len(detail.Topic.Heuristics); got == 0 {
+		t.Fatal("topic heuristics were empty")
 	}
-	docs := getMapleCategoryDocuments(t, srv, caseID, categoryID)
+	docs := getMapleTopicDocuments(t, srv, caseID, topicID)
 	if got := len(docs.Documents); got != 1 {
-		t.Fatalf("category document count = %d, want 1", got)
+		t.Fatalf("topic document count = %d, want 1", got)
 	}
 	if got := len(docs.Documents[0].Heuristics); got == 0 {
 		t.Fatal("document heuristics were empty")
@@ -110,10 +110,10 @@ func TestMapleCreateCaseStartsProcessingAndCompletes(t *testing.T) {
 
 func TestProcessCaseAttachesPerDocumentHeuristics(t *testing.T) {
 	classifier := newControlledClassifier(classificationReport{Documents: []classifiedDocument{
-		classifiedDoc("memo.txt", classifiedCategory{
+		classifiedDoc("memo.txt", classifiedTopic{
 			Title:       "Procurement",
 			Description: "Vendor approval and purchasing issues.",
-			Category:    "procurement",
+			Topic:       "procurement",
 			Confidence:  0.95,
 		}),
 	}}, nil)
@@ -127,12 +127,12 @@ func TestProcessCaseAttachesPerDocumentHeuristics(t *testing.T) {
 
 	caseID := postMapleCase(t, srv, []docInput{{Filename: "memo.txt", Content: "Vendor Atlas lacked a purchase order."}})
 	complete := waitMapleStatus(t, srv, caseID, statusComplete)
-	if got := len(complete.Categories); got != 1 {
-		t.Fatalf("category count = %d, want 1", got)
+	if got := len(complete.Topics); got != 1 {
+		t.Fatalf("topic count = %d, want 1", got)
 	}
-	categoryID := complete.Categories[0].ID
+	topicID := complete.Topics[0].ID
 
-	docs := getMapleCategoryDocuments(t, srv, caseID, categoryID)
+	docs := getMapleTopicDocuments(t, srv, caseID, topicID)
 	if got := len(docs.Documents); got != 1 {
 		t.Fatalf("document count = %d, want 1", got)
 	}
@@ -147,9 +147,9 @@ func TestProcessCaseAttachesPerDocumentHeuristics(t *testing.T) {
 
 func TestProcessCaseFailsCaseWhenClassifyDocumentFails(t *testing.T) {
 	classifier := newControlledClassifier(classificationReport{Documents: []classifiedDocument{
-		classifiedDoc("memo.txt", classifiedCategory{
-			Title:    "Procurement",
-			Category: "procurement",
+		classifiedDoc("memo.txt", classifiedTopic{
+			Title: "Procurement",
+			Topic: "procurement",
 		}),
 	}}, nil)
 	classifier.documentErr = errors.New("simulated per-doc failure")
@@ -227,34 +227,34 @@ func getMapleCase(t *testing.T, srv *mapleServer, caseID int) caseSummaryRespons
 	return resp
 }
 
-func getMapleCategory(t *testing.T, srv *mapleServer, caseID, categoryID int) categoryDetailResponse {
+func getMapleTopic(t *testing.T, srv *mapleServer, caseID, topicID int) topicDetailResponse {
 	t.Helper()
-	req := httptest.NewRequest(http.MethodGet, "/api/v1/cases/"+strconv.Itoa(caseID)+"/categories/"+strconv.Itoa(categoryID), nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/cases/"+strconv.Itoa(caseID)+"/topics/"+strconv.Itoa(topicID), nil)
 	req.SetPathValue("case_id", strconv.Itoa(caseID))
-	req.SetPathValue("category_id", strconv.Itoa(categoryID))
+	req.SetPathValue("topic_id", strconv.Itoa(topicID))
 	rec := httptest.NewRecorder()
-	srv.getCategoryHandler(rec, req)
+	srv.getTopicHandler(rec, req)
 	if rec.Code != http.StatusOK {
-		t.Fatalf("GET category status = %d body = %s", rec.Code, rec.Body.String())
+		t.Fatalf("GET topic status = %d body = %s", rec.Code, rec.Body.String())
 	}
-	var resp categoryDetailResponse
+	var resp topicDetailResponse
 	if err := json.NewDecoder(rec.Body).Decode(&resp); err != nil {
 		t.Fatal(err)
 	}
 	return resp
 }
 
-func getMapleCategoryDocuments(t *testing.T, srv *mapleServer, caseID, categoryID int) categoryDocumentsResponse {
+func getMapleTopicDocuments(t *testing.T, srv *mapleServer, caseID, topicID int) topicDocumentsResponse {
 	t.Helper()
-	req := httptest.NewRequest(http.MethodGet, "/api/v1/cases/"+strconv.Itoa(caseID)+"/categories/"+strconv.Itoa(categoryID)+"/documents", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/cases/"+strconv.Itoa(caseID)+"/topics/"+strconv.Itoa(topicID)+"/documents", nil)
 	req.SetPathValue("case_id", strconv.Itoa(caseID))
-	req.SetPathValue("category_id", strconv.Itoa(categoryID))
+	req.SetPathValue("topic_id", strconv.Itoa(topicID))
 	rec := httptest.NewRecorder()
-	srv.getCategoryDocumentsHandler(rec, req)
+	srv.getTopicDocumentsHandler(rec, req)
 	if rec.Code != http.StatusOK {
-		t.Fatalf("GET category documents status = %d body = %s", rec.Code, rec.Body.String())
+		t.Fatalf("GET topic documents status = %d body = %s", rec.Code, rec.Body.String())
 	}
-	var resp categoryDocumentsResponse
+	var resp topicDocumentsResponse
 	if err := json.NewDecoder(rec.Body).Decode(&resp); err != nil {
 		t.Fatal(err)
 	}

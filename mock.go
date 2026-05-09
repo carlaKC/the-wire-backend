@@ -16,7 +16,7 @@ var mockCaseSummary = caseSummaryResponse{
 	CreatedAt:     mockCreatedAt,
 	Status:        "complete",
 	DocumentCount: 4,
-	Categories: []categorySummary{
+	Topics: []topicSummary{
 		{
 			ID:          1,
 			Title:       "Financial irregularities",
@@ -38,10 +38,10 @@ var mockCaseSummary = caseSummaryResponse{
 	},
 }
 
-var mockCategoryDetails = map[int]categoryDetailResponse{
+var mockTopicDetails = map[int]topicDetailResponse{
 	1: {
 		CaseID: mockCaseID,
-		Category: categoryDetail{
+		Topic: topicDetail{
 			ID:            1,
 			Title:         "Financial irregularities",
 			Triage:        "high",
@@ -57,7 +57,7 @@ var mockCategoryDetails = map[int]categoryDetailResponse{
 	},
 	2: {
 		CaseID: mockCaseID,
-		Category: categoryDetail{
+		Topic: topicDetail{
 			ID:            2,
 			Title:         "Internal communications",
 			Triage:        "medium",
@@ -73,7 +73,7 @@ var mockCategoryDetails = map[int]categoryDetailResponse{
 	},
 	3: {
 		CaseID: mockCaseID,
-		Category: categoryDetail{
+		Topic: topicDetail{
 			ID:            3,
 			Title:         "External correspondence",
 			Triage:        "low",
@@ -89,10 +89,10 @@ var mockCategoryDetails = map[int]categoryDetailResponse{
 	},
 }
 
-var mockCategoryDocuments = map[int]categoryDocumentsResponse{
+var mockTopicDocuments = map[int]topicDocumentsResponse{
 	1: {
-		CaseID:     mockCaseID,
-		CategoryID: 1,
+		CaseID:  mockCaseID,
+		TopicID: 1,
 		Documents: []documentResponse{
 			{
 				ID:       1,
@@ -118,7 +118,7 @@ confirm who approved these on your side?
 
 — J.`,
 				Heuristics: []heuristic{
-					{Name: "consistency", Rating: "high", Description: "Dates and counterparties match the Atlas invoice in this category."},
+					{Name: "consistency", Rating: "high", Description: "Dates and counterparties match the Atlas invoice in this topic."},
 					{Name: "references", Rating: "medium", Description: "Atlas Holdings and Northbridge Consulting are verifiable in public registries; PO #84221 is not."},
 					{Name: "red_flags", Rating: "low", Description: "Format, header, and tone match other internal memos from this organization."},
 				},
@@ -148,8 +148,8 @@ This invoice is confidential and should not be shared with audit.`,
 		},
 	},
 	2: {
-		CaseID:     mockCaseID,
-		CategoryID: 2,
+		CaseID:  mockCaseID,
+		TopicID: 2,
 		Documents: []documentResponse{
 			{
 				ID:       3,
@@ -178,8 +178,8 @@ encrypted channel.
 		},
 	},
 	3: {
-		CaseID:     mockCaseID,
-		CategoryID: 3,
+		CaseID:  mockCaseID,
+		TopicID: 3,
 		Documents: []documentResponse{
 			{
 				ID:       4,
@@ -247,33 +247,33 @@ func mockGetCaseHandler(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, mockCaseSummary)
 }
 
-func mockGetCategoryHandler(w http.ResponseWriter, r *http.Request) {
+func mockGetTopicHandler(w http.ResponseWriter, r *http.Request) {
 	if !requireKnownMockCase(w, r) {
 		return
 	}
-	categoryID, ok := parseID(w, r, "category_id", "category_not_found")
+	topicID, ok := parseID(w, r, "topic_id", "topic_not_found")
 	if !ok {
 		return
 	}
-	resp, ok := mockCategoryDetails[categoryID]
+	resp, ok := mockTopicDetails[topicID]
 	if !ok {
-		writeError(w, http.StatusNotFound, "category_not_found", "no category with id "+strconv.Itoa(categoryID)+" in case "+strconv.Itoa(mockCaseID))
+		writeError(w, http.StatusNotFound, "topic_not_found", "no topic with id "+strconv.Itoa(topicID)+" in case "+strconv.Itoa(mockCaseID))
 		return
 	}
 	writeJSON(w, http.StatusOK, resp)
 }
 
-func mockGetCategoryDocumentsHandler(w http.ResponseWriter, r *http.Request) {
+func mockGetTopicDocumentsHandler(w http.ResponseWriter, r *http.Request) {
 	if !requireKnownMockCase(w, r) {
 		return
 	}
-	categoryID, ok := parseID(w, r, "category_id", "category_not_found")
+	topicID, ok := parseID(w, r, "topic_id", "topic_not_found")
 	if !ok {
 		return
 	}
-	resp, ok := mockCategoryDocuments[categoryID]
+	resp, ok := mockTopicDocuments[topicID]
 	if !ok {
-		writeError(w, http.StatusNotFound, "category_not_found", "no category with id "+strconv.Itoa(categoryID)+" in case "+strconv.Itoa(mockCaseID))
+		writeError(w, http.StatusNotFound, "topic_not_found", "no topic with id "+strconv.Itoa(topicID)+" in case "+strconv.Itoa(mockCaseID))
 		return
 	}
 	writeJSON(w, http.StatusOK, resp)

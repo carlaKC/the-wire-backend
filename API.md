@@ -1,6 +1,6 @@
 # The Wire — Document Grading API
 
-HTTP API for submitting whistleblower document dumps and retrieving categorized, heuristic-graded results. The server classifies submitted text through a Maple-compatible chat completion endpoint and stores processed cases in memory.
+HTTP API for submitting whistleblower document dumps and retrieving topic-grouped, heuristic-graded results. The server classifies submitted text through a Maple-compatible chat completion endpoint and stores processed cases in memory.
 
 ## Running the server
 
@@ -36,26 +36,26 @@ curl -X POST http://localhost:8080/api/v1/cases \
   -d '{"documents":[{"filename":"memo.txt","content":"…"},{"filename":"email.txt","content":"…"}]}'
 # → { "case_id": 1 }
 
-# 2. List categories
+# 2. List topics
 curl http://localhost:8080/api/v1/cases/1
 
-# 3. Category detail (heuristics for the category as a whole)
-curl http://localhost:8080/api/v1/cases/1/categories/1
+# 3. Topic detail (heuristics for the topic as a whole)
+curl http://localhost:8080/api/v1/cases/1/topics/1
 
-# 4. Documents in a category (raw content + per-document heuristics)
-curl http://localhost:8080/api/v1/cases/1/categories/1/documents
+# 4. Documents in a topic (raw content + per-document heuristics)
+curl http://localhost:8080/api/v1/cases/1/topics/1/documents
 ```
 
 ## Concepts
 
 - **Case** — one document dump. Created by POSTing a set of text documents. Identified by an integer.
-- **Category** — a reusable grouping the service infers from submitted documents (e.g. "Financial irregularities"). Category IDs are global within the running server process, so documents in a new case can be assigned to a category created by an older case. Case endpoints return only categories represented in that case.
-- **Document** — one text file from the original submission. Each document belongs to exactly one category.
-- **Heuristic** — a named graded signal: `{ name, rating, description }`. Appears at the **category level** (signal across the whole category) and the **document level** (signal for that one document). The set of heuristic names is **open**: render whatever the API returns rather than hardcoding the list.
+- **Topic** — a reusable grouping the service infers from submitted documents (e.g. "Financial irregularities"). Topic IDs are global within the running server process, so documents in a new case can be assigned to a topic created by an older case. Case endpoints return only topics represented in that case.
+- **Document** — one text file from the original submission. Each document belongs to exactly one topic.
+- **Heuristic** — a named graded signal: `{ name, rating, description }`. Appears at the **topic level** (signal across the whole topic) and the **document level** (signal for that one document). The set of heuristic names is **open**: render whatever the API returns rather than hardcoding the list.
 
 ## Enumerations
 
-- **Triage** (category-level): `"high" | "medium" | "low"`. Use for visual emphasis — high = alert, medium = caution, low = informational.
+- **Triage** (topic-level): `"high" | "medium" | "low"`. Use for visual emphasis — high = alert, medium = caution, low = informational.
 - **Heuristic rating**: `"high" | "medium" | "low"`. Polarity is heuristic-specific; for unknown heuristic names, render the rating neutrally and rely on the `description`.
 
 ## Processing model
@@ -64,7 +64,7 @@ curl http://localhost:8080/api/v1/cases/1/categories/1/documents
 
 | Status | Meaning |
 |--------|---------|
-| `processing` | Analysis is in flight. `categories` may be empty or partial. Per-document `heuristics` may be empty. Category endpoints (`/categories/{cid}` and `/categories/{cid}/documents`) return `404 category_not_found` until the category is materialized. |
+| `processing` | Analysis is in flight. `topics` may be empty or partial. Per-document `heuristics` may be empty. Topic endpoints (`/topics/{tid}` and `/topics/{tid}/documents`) return `404 topic_not_found` until the topic is materialized. |
 | `complete` | Analysis finished. All data populated. |
 | `failed` | Analysis errored. The case is terminal; further polling will not change the result. |
 
@@ -72,17 +72,17 @@ Clients should poll `GET /cases/{id}` until `status` is `complete` or `failed`.
 
 The current mock implementation is effectively synchronous: every newly created case is reported with `status: "complete"` immediately.
 
-Immediately after creation, `GET /cases/{case_id}` can return the normal case summary shape with an empty `categories` array. Category and document endpoints return `category_not_found` until classification has produced categories. Once classification completes, the same GET endpoints return final data.
+Immediately after creation, `GET /cases/{case_id}` can return the normal case summary shape with an empty `topics` array. Topic and document endpoints return `topic_not_found` until classification has produced topics. Once classification completes, the same GET endpoints return final data.
 
 Cases are stored in process memory. Restarting the server clears previously created cases.
 
 ## Classification mapping
 
 - `POST /cases` validates the request, returns the case id, and sends submitted document text to Maple in the background.
-- The server sends existing global categories to Maple. Maple assigns each document to an existing category when one fits, or returns a new category title/description when no existing category fits.
-- Category IDs are assigned by the server and are reusable across cases.
+- The server sends existing global topics to Maple. Maple assigns each document to an existing topic when one fits, or returns a new topic title/description when no existing topic fits.
+- Topic IDs are assigned by the server and are reusable across cases.
 - The original submitted filename/content is preserved in document responses.
-- Category `triage` on case endpoints is derived from the highest sensitivity seen for that category in that case: level 1 -> `low`, level 2 -> `medium`, levels 3-4 -> `high`.
+- Topic `triage` on case endpoints is derived from the highest sensitivity seen for that topic in that case: level 1 -> `low`, level 2 -> `medium`, levels 3-4 -> `high`.
 - Document IDs are assigned by the server for each case.
 
 ---
@@ -123,7 +123,7 @@ Create a case from a set of text documents.
 
 ### GET `/cases/{case_id}`
 
-Case summary — the categories the service inferred for this dump.
+Case summary — the topics the service inferred for this dump.
 
 **Response 200**:
 ```json
@@ -132,7 +132,7 @@ Case summary — the categories the service inferred for this dump.
   "created_at": "2026-05-09T12:34:56Z",
   "status": "complete",
   "document_count": 4,
-  "categories": [
+  "topics": [
     {
       "id": 1,
       "title": "Procurement",
@@ -153,31 +153,31 @@ Case summary — the categories the service inferred for this dump.
 |-------|------|-------|
 | `created_at` | string | RFC3339 UTC. |
 | `status` | string | One of `processing`, `complete`, `failed`. See [Processing model](#processing-model). |
-| `document_count` | integer | Total documents in the case (sum across categories). |
-| `categories` | array | Case-scoped list of global category IDs represented in this case. Order is service-defined; sort on the client if you need triage-first ordering. May be empty while `status` is `processing`. |
+| `document_count` | integer | Total documents in the case (sum across topics). |
+| `topics` | array | Case-scoped list of global topic IDs represented in this case. Order is service-defined; sort on the client if you need triage-first ordering. May be empty while `status` is `processing`. |
 
 **Errors:**
 - `404 case_not_found`.
 
 ---
 
-### GET `/cases/{case_id}/categories/{category_id}`
+### GET `/cases/{case_id}/topics/{topic_id}`
 
-Category detail with category-level heuristics for this case. The `category.id` is a global category ID and may appear in other cases.
+Topic detail with topic-level heuristics for this case. The `topic.id` is a global topic ID and may appear in other cases.
 
 **Response 200**:
 ```json
 {
   "case_id": 1,
-  "category": {
+  "topic": {
     "id": 1,
     "title": "Procurement",
     "triage": "high",
     "description": "The memo discusses vendor approval gaps.",
     "document_count": 1,
     "heuristics": [
-      { "name": "sensitivity", "rating": "high", "description": "Highest sensitivity level in this category is 3." },
-      { "name": "claims", "rating": "medium", "description": "1 factual claim(s) extracted in this category." }
+      { "name": "sensitivity", "rating": "high", "description": "Highest sensitivity level in this topic is 3." },
+      { "name": "claims", "rating": "medium", "description": "1 factual claim(s) extracted in this topic." }
     ]
   }
 }
@@ -186,19 +186,19 @@ Category detail with category-level heuristics for this case. The `category.id` 
 `heuristics` is an open list — render every entry the server returns. Don't assume a fixed length or fixed names.
 
 **Errors:**
-- `404 case_not_found`, `404 category_not_found`.
+- `404 case_not_found`, `404 topic_not_found`.
 
 ---
 
-### GET `/cases/{case_id}/categories/{category_id}/documents`
+### GET `/cases/{case_id}/topics/{topic_id}/documents`
 
-The documents from this case that are assigned to the category, with their raw content and per-document heuristics. Even when the category ID exists in other cases, this endpoint returns only documents from `{case_id}`.
+The documents from this case that are assigned to the topic, with their raw content and per-document heuristics. Even when the topic ID exists in other cases, this endpoint returns only documents from `{case_id}`.
 
 **Response 200**:
 ```json
 {
   "case_id": 1,
-  "category_id": 1,
+  "topic_id": 1,
   "documents": [
     {
       "id": 1,
@@ -216,7 +216,7 @@ The documents from this case that are assigned to the category, with their raw c
 `content` is the raw text of the document — render in a monospace/preformatted block to preserve whitespace and newlines.
 
 **Errors:**
-- `404 case_not_found`, `404 category_not_found`.
+- `404 case_not_found`, `404 topic_not_found`.
 
 ---
 
@@ -232,15 +232,15 @@ All `4xx`/`5xx` responses share this shape:
 |------|--------|---------|
 | `invalid_request` | 400 | Body is malformed or missing required fields. |
 | `case_not_found` | 404 | No case exists with the given ID. |
-| `category_not_found` | 404 | The case exists but has no category with that ID. |
+| `topic_not_found` | 404 | The case exists but has no topic with that ID. |
 
 ---
 
 ## Suggested frontend flow
 
 1. **Submit** — user pastes/uploads text documents. `POST /cases`. Capture `case_id` and route to the case overview.
-2. **Overview** — `GET /cases/{case_id}`. If `status` is `processing`, show a pending state and poll. Once `complete`, render category cards. Sort client-side by triage (high → medium → low) to draw the eye.
-3. **Drill into a category** — `GET /cases/{case_id}/categories/{category_id}` for the category-level signal. You can also fire `GET /cases/{case_id}/categories/{category_id}/documents` in parallel and render documents in a side panel or below the heuristics.
+2. **Overview** — `GET /cases/{case_id}`. If `status` is `processing`, show a pending state and poll. Once `complete`, render topic cards. Sort client-side by triage (high → medium → low) to draw the eye.
+3. **Drill into a topic** — `GET /cases/{case_id}/topics/{topic_id}` for the topic-level signal. You can also fire `GET /cases/{case_id}/topics/{topic_id}/documents` in parallel and render documents in a side panel or below the heuristics.
 4. **Inspect a document** — within the documents view, expandable cards showing filename, raw content, and per-doc heuristics.
 
 ## TypeScript types
@@ -254,7 +254,7 @@ export interface Heuristic {
   description: string;
 }
 
-export interface CategorySummary {
+export interface TopicSummary {
   id: number;
   title: string;
   triage: Rating;
@@ -268,12 +268,12 @@ export interface CaseSummary {
   created_at: string; // RFC3339
   status: CaseStatus;
   document_count: number;
-  categories: CategorySummary[];
+  topics: TopicSummary[];
 }
 
-export interface CategoryDetailResponse {
+export interface TopicDetailResponse {
   case_id: number;
-  category: {
+  topic: {
     id: number;
     title: string;
     triage: Rating;
@@ -290,9 +290,9 @@ export interface DocumentRecord {
   heuristics: Heuristic[];
 }
 
-export interface CategoryDocumentsResponse {
+export interface TopicDocumentsResponse {
   case_id: number;
-  category_id: number;
+  topic_id: number;
   documents: DocumentRecord[];
 }
 

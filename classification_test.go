@@ -151,7 +151,7 @@ func (c *recordingChatCompleter) ChatCompletion(_ context.Context, req chatReque
 
 func TestMapleClassifierUsesInjectedChatCompleter(t *testing.T) {
 	completer := &recordingChatCompleter{
-		contents: []string{`{"documents":[{"id":"doc-1","topic":{"title":"Ops","category":"ops","confidence":0.9},"document_type":{"category":"memo","confidence":0.8},"sensitivity":{"level":2,"label":"medium","confidence":0.7},"rationale":"ops memo","claims":[]}]}`},
+		contents: []string{`{"documents":[{"id":"doc-1","topic":{"title":"Ops","topic":"ops","confidence":0.9},"document_type":{"topic":"memo","confidence":0.8},"sensitivity":{"level":2,"label":"medium","confidence":0.7},"rationale":"ops memo","claims":[]}]}`},
 	}
 	classifier := mapleClassifier{
 		model:  "classification-model",
@@ -160,7 +160,7 @@ func TestMapleClassifierUsesInjectedChatCompleter(t *testing.T) {
 
 	report, err := classifier.Classify(context.Background(), []classifiedInput{
 		{ID: "doc-1", Filename: "memo.txt", Content: "memo body"},
-	}, []categoryCandidate{{ID: 7, Title: "Existing", Description: "Existing category"}})
+	}, []topicCandidate{{ID: 7, Title: "Existing", Description: "Existing topic"}})
 	if err != nil {
 		t.Fatalf("Classify returned error: %v", err)
 	}
@@ -393,7 +393,7 @@ func TestParseClassificationContentRepairsInvalidNumericIDToken(t *testing.T) {
 					"title": "Atlas Holdings Payment Irregularity",
 					"description": "Payments made without purchase order documentation."
 				},
-				"document_type": {"category": "memo", "confidence": 0.8},
+				"document_type": {"topic": "memo", "confidence": 0.8},
 				"sensitivity": {"level": 3, "label": "high", "confidence": 0.9},
 				"rationale": "Contains evidence of financial irregularity.",
 				"claims": []
@@ -439,5 +439,5 @@ func TestBuildRepairRequestIncludesClassificationSchema(t *testing.T) {
 }
 
 func validClassificationContent() string {
-	return `{"documents":[{"id":"doc-1","topic":{"title":"Ops","category":"ops","confidence":0.9},"document_type":{"category":"memo","confidence":0.8},"sensitivity":{"level":2,"label":"medium","confidence":0.7},"rationale":"ops memo","claims":[]}]}`
+	return `{"documents":[{"id":"doc-1","topic":{"title":"Ops","topic":"ops","confidence":0.9},"document_type":{"topic":"memo","confidence":0.8},"sensitivity":{"level":2,"label":"medium","confidence":0.7},"rationale":"ops memo","claims":[]}]}`
 }

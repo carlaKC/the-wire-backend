@@ -12,7 +12,7 @@ type heuristic struct {
 	Description string `json:"description"`
 }
 
-type categorySummary struct {
+type topicSummary struct {
 	ID          int    `json:"id"`
 	Title       string `json:"title"`
 	Triage      string `json:"triage"`
@@ -20,14 +20,14 @@ type categorySummary struct {
 }
 
 type caseSummaryResponse struct {
-	CaseID        int               `json:"case_id"`
-	CreatedAt     string            `json:"created_at"`
-	Status        string            `json:"status"`
-	DocumentCount int               `json:"document_count"`
-	Categories    []categorySummary `json:"categories"`
+	CaseID        int            `json:"case_id"`
+	CreatedAt     string         `json:"created_at"`
+	Status        string         `json:"status"`
+	DocumentCount int            `json:"document_count"`
+	Topics        []topicSummary `json:"topics"`
 }
 
-type categoryDetail struct {
+type topicDetail struct {
 	ID            int         `json:"id"`
 	Title         string      `json:"title"`
 	Triage        string      `json:"triage"`
@@ -36,9 +36,9 @@ type categoryDetail struct {
 	Heuristics    []heuristic `json:"heuristics"`
 }
 
-type categoryDetailResponse struct {
-	CaseID   int            `json:"case_id"`
-	Category categoryDetail `json:"category"`
+type topicDetailResponse struct {
+	CaseID int         `json:"case_id"`
+	Topic  topicDetail `json:"topic"`
 }
 
 type documentResponse struct {
@@ -48,10 +48,10 @@ type documentResponse struct {
 	Heuristics []heuristic `json:"heuristics"`
 }
 
-type categoryDocumentsResponse struct {
-	CaseID     int                `json:"case_id"`
-	CategoryID int                `json:"category_id"`
-	Documents  []documentResponse `json:"documents"`
+type topicDocumentsResponse struct {
+	CaseID    int                `json:"case_id"`
+	TopicID   int                `json:"topic_id"`
+	Documents []documentResponse `json:"documents"`
 }
 
 type docInput struct {
