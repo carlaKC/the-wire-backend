@@ -35,6 +35,20 @@ type classifiedCaseStore struct {
 	topicTitles map[string]int
 }
 
+type topicBuild struct {
+	id                    int
+	title                 string
+	description           string
+	maxLevel              int
+	documents             []documentResponse
+	claimCount            int
+	statuses              map[string]int
+	docTypes              map[string]int
+	groupKey              string
+	importanceScore       string
+	importanceExplanation string
+}
+
 func newClassifiedCaseStore() *classifiedCaseStore {
 	return &classifiedCaseStore{
 		nextCaseID:  1,
@@ -64,11 +78,11 @@ func (s *classifiedCaseStore) create(data caseData) int {
 	return id
 }
 
-func (s *classifiedCaseStore) replaceClassified(id int, createdAt time.Time, inputs []classifiedInput, report classificationReport, heuristicsByDoc map[string][]heuristic) {
+func (s *classifiedCaseStore) replaceClassified(id int, createdAt time.Time, inputs []classifiedInput, report classificationReport, heuristicsByDoc map[string][]heuristic, groupHeuristicsByKey map[string][]heuristic) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	data := s.buildCaseDataLocked(createdAt, inputs, report, heuristicsByDoc)
+	data := s.buildCaseDataLocked(createdAt, inputs, report, heuristicsByDoc, groupHeuristicsByKey)
 	data.summary.CaseID = id
 	for topicID, detail := range data.details {
 		detail.CaseID = id
@@ -130,21 +144,10 @@ func emptyCaseData(createdAt time.Time, documentCount int) caseData {
 	}
 }
 
-func (s *classifiedCaseStore) buildCaseDataLocked(createdAt time.Time, inputs []classifiedInput, report classificationReport, heuristicsByDoc map[string][]heuristic) caseData {
+func (s *classifiedCaseStore) buildCaseDataLocked(createdAt time.Time, inputs []classifiedInput, report classificationReport, heuristicsByDoc map[string][]heuristic, groupHeuristicsByKey map[string][]heuristic) caseData {
 	inputByID := map[string]classifiedInput{}
 	for _, input := range inputs {
 		inputByID[input.ID] = input
-	}
-
-	type topicBuild struct {
-		id          int
-		title       string
-		description string
-		maxLevel    int
-		documents   []documentResponse
-		claimCount  int
-		statuses    map[string]int
-		docTypes    map[string]int
 	}
 
 	topics := map[int]*topicBuild{}
@@ -162,11 +165,17 @@ func (s *classifiedCaseStore) buildCaseDataLocked(createdAt time.Time, inputs []
 				maxLevel:    classified.Sensitivity.Level,
 				statuses:    map[string]int{},
 				docTypes:    map[string]int{},
+				groupKey:    groupKeyForTopic(classified.Topic),
 			}
 			order = append(order, global.id)
 		}
 
 		topic := topics[global.id]
+		score, explanation := classifiedImportanceRating(classified, topic.maxLevel)
+		if ratingRank(score) > ratingRank(topic.importanceScore) {
+			topic.importanceScore = score
+			topic.importanceExplanation = explanation
+		}
 		topic.maxLevel = max(topic.maxLevel, classified.Sensitivity.Level)
 		topic.claimCount += len(classified.Claims)
 		if classified.DocumentType.Topic != "" {
@@ -202,23 +211,29 @@ func (s *classifiedCaseStore) buildCaseDataLocked(createdAt time.Time, inputs []
 		if topic.description == "" {
 			topic.description = fmt.Sprintf("%d document(s) grouped under topic %s.", len(topic.documents), topic.title)
 		}
-		triage := triageFromSensitivity(topic.maxLevel)
+		topicHs := topicHeuristics(topic.claimCount, topic.maxLevel, topic.statuses, topic.docTypes)
+		if extras, ok := groupHeuristicsByKey[topic.groupKey]; ok {
+			topicHs = append(topicHs, extras...)
+		}
+		triage := topicTriage(topic, topicHs)
+		description := topicDescriptionWithTriage(topic.description, triage)
 
 		summaries = append(summaries, topicSummary{
 			ID:          topic.id,
 			Title:       topic.title,
-			Triage:      triage,
-			Description: topic.description,
+			Triage:      triage.Final,
+			Description: description,
 		})
+		topicHs = append(topicHs, triageHeuristics(triage)...)
 
 		details[topic.id] = topicDetailResponse{
 			Topic: topicDetail{
 				ID:            topic.id,
 				Title:         topic.title,
-				Triage:        triage,
-				Description:   topic.description,
+				Triage:        triage.Final,
+				Description:   description,
 				DocumentCount: len(topic.documents),
-				Heuristics:    topicHeuristics(topic.claimCount, topic.maxLevel, topic.statuses, topic.docTypes),
+				Heuristics:    topicHeuristicResponses(topicHs),
 			},
 		}
 		documents[topic.id] = topicDocumentsResponse{
@@ -320,6 +335,169 @@ func topicHeuristics(claimCount, maxSensitivity int, statuses map[string]int, do
 	return out
 }
 
+func topicTriage(topic *topicBuild, topicHeuristics []heuristic) triageRationale {
+	importance := normalizedRating(topic.importanceScore)
+	if importance == "" {
+		importance = triageFromSensitivity(topic.maxLevel)
+	}
+	quality := evidenceQuality(topic.documents, topicHeuristics)
+	final := finalTriage(importance, quality)
+	description := topic.importanceExplanation
+	if description == "" {
+		description = "Importance falls back to the highest classified sensitivity in this topic."
+	}
+	return triageRationale{
+		Importance:      importance,
+		EvidenceQuality: quality,
+		Final:           final,
+		Description:     "Importance: " + description + " Evidence quality is " + quality + ".",
+	}
+}
+
+func topicDescriptionWithTriage(description string, r triageRationale) string {
+	description = strings.TrimSpace(description)
+	note := "Triage: " + r.Final + " because importance is " + r.Importance + " and evidence quality is " + r.EvidenceQuality + "."
+	if description == "" {
+		return note
+	}
+	return description + " " + note
+}
+
+func triageHeuristics(r triageRationale) []heuristic {
+	return []heuristic{
+		{
+			Name:        "importance",
+			Signal:      "positive",
+			Rating:      r.Importance,
+			Description: r.Description,
+		},
+		{
+			Name:        "evidence_quality",
+			Signal:      "positive",
+			Rating:      r.EvidenceQuality,
+			Description: "Evidence quality used to gate final topic triage.",
+		},
+	}
+}
+
+func classifiedImportanceRating(document classifiedDocument, fallbackLevel int) (string, string) {
+	score := normalizedRating(document.Topic.Importance.Score)
+	if score != "" {
+		return score, strings.TrimSpace(document.Topic.Importance.Explanation)
+	}
+	maxLevel := max(fallbackLevel, document.Sensitivity.Level)
+	for _, claim := range document.Claims {
+		maxLevel = max(maxLevel, claim.Sensitivity.Level)
+	}
+	return triageFromSensitivity(maxLevel), ""
+}
+
+func finalTriage(importance, quality string) string {
+	switch normalizedRating(importance) {
+	case "high":
+		if normalizedRating(quality) == "low" {
+			return "medium"
+		}
+		return "high"
+	case "medium":
+		if normalizedRating(quality) == "low" {
+			return "low"
+		}
+		return "medium"
+	default:
+		return "low"
+	}
+}
+
+func evidenceQuality(documents []documentResponse, topicHeuristics []heuristic) string {
+	total := 0
+	count := 0
+	filtered := 0
+	for _, document := range documents {
+		if document.Filtered {
+			filtered++
+		}
+		for _, h := range document.Heuristics {
+			if score, ok := evidenceQualityScore(h); ok {
+				total += score
+				count++
+			}
+		}
+	}
+	for _, h := range topicHeuristics {
+		if score, ok := evidenceQualityScore(h); ok {
+			total += score
+			count++
+		}
+	}
+	if count == 0 {
+		return "medium"
+	}
+	rating := ratingFromAverage(total, count)
+	if filtered == len(documents) && filtered > 0 {
+		return "low"
+	}
+	if filtered > 0 && rating == "high" {
+		return "medium"
+	}
+	return rating
+}
+
+func evidenceQualityScore(h heuristic) (int, bool) {
+	name := normalizedTopic(h.Name)
+	switch name {
+	case "consistency", "references", "corroboration", "shared_references":
+	case "emotive_language", "ideology_or_incentives", "coordinated_framing", "shared_agenda":
+	default:
+		return 0, false
+	}
+	rating := normalizedRating(h.Rating)
+	if rating == "" {
+		return 0, false
+	}
+	signal := normalizedTopic(h.Signal)
+	if signal == "" {
+		signal = heuristicSignal(name)
+	}
+	score := ratingRank(rating)
+	if signal == "negative" {
+		score = 4 - score
+	}
+	return score, true
+}
+
+func heuristicSignal(name string) string {
+	switch normalizedTopic(name) {
+	case "emotive_language", "ideology_or_incentives", "coordinated_framing", "shared_agenda":
+		return "negative"
+	default:
+		return "positive"
+	}
+}
+
+func ratingFromAverage(total, count int) string {
+	avg := float64(total) / float64(count)
+	if avg >= 2.5 {
+		return "high"
+	}
+	if avg >= 1.5 {
+		return "medium"
+	}
+	return "low"
+}
+
+func topicHeuristicResponses(heuristics []heuristic) []topicHeuristic {
+	out := make([]topicHeuristic, 0, len(heuristics))
+	for _, h := range heuristics {
+		out = append(out, topicHeuristic{
+			Name:        h.Name,
+			Rating:      h.Rating,
+			Description: h.Description,
+		})
+	}
+	return out
+}
+
 func normalizedTopic(topic string) string {
 	topic = strings.TrimSpace(strings.ToLower(topic))
 	if topic == "" {
@@ -330,6 +508,21 @@ func normalizedTopic(topic string) string {
 
 func topicKey(title string) string {
 	return strings.Join(strings.Fields(strings.ToLower(strings.TrimSpace(title))), " ")
+}
+
+func groupKeyForTopic(t classifiedTopic) string {
+	if t.ID > 0 {
+		return "id:" + strconv.Itoa(t.ID)
+	}
+	return "title:" + topicKey(groupTitleForTopic(t))
+}
+
+func groupTitleForTopic(t classifiedTopic) string {
+	title := strings.TrimSpace(t.Title)
+	if title == "" {
+		title = humanTitle(t.Topic)
+	}
+	return title
 }
 
 func humanTitle(value string) string {
@@ -355,6 +548,32 @@ func triageFromSensitivity(level int) string {
 		return "medium"
 	default:
 		return "low"
+	}
+}
+
+func normalizedRating(value string) string {
+	switch normalizedTopic(value) {
+	case "high":
+		return "high"
+	case "medium":
+		return "medium"
+	case "low":
+		return "low"
+	default:
+		return ""
+	}
+}
+
+func ratingRank(value string) int {
+	switch normalizedRating(value) {
+	case "high":
+		return 3
+	case "medium":
+		return 2
+	case "low":
+		return 1
+	default:
+		return 0
 	}
 }
 

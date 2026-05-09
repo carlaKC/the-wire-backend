@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 )
@@ -26,6 +27,14 @@ type controlledClassifier struct {
 	documentErr      error
 	documentReleases chan struct{}
 	documentCalls    chan classifiedInput
+	groupReport      []heuristic
+	groupErr         error
+	groupCalls       chan groupCall
+}
+
+type groupCall struct {
+	documents  []classifiedInput
+	topicTitle string
 }
 
 func newControlledClassifier(report classificationReport, err error) *controlledClassifier {
@@ -55,6 +64,16 @@ func (c *controlledClassifier) ClassifyDocument(_ context.Context, document clas
 		<-c.documentReleases
 	}
 	return c.documentReport, c.documentErr
+}
+
+func (c *controlledClassifier) ClassifyGroup(_ context.Context, documents []classifiedInput, topicTitle string) ([]heuristic, error) {
+	if c.groupCalls != nil {
+		c.groupCalls <- groupCall{
+			documents:  append([]classifiedInput{}, documents...),
+			topicTitle: topicTitle,
+		}
+	}
+	return c.groupReport, c.groupErr
 }
 
 func TestMapleCreateCaseStartsProcessingAndCompletes(t *testing.T) {
@@ -98,6 +117,18 @@ func TestMapleCreateCaseStartsProcessingAndCompletes(t *testing.T) {
 	detail := getMapleTopic(t, srv, caseID, topicID)
 	if got := len(detail.Topic.Heuristics); got == 0 {
 		t.Fatal("topic heuristics were empty")
+	}
+	if detail.Topic.Triage != complete.Topics[0].Triage {
+		t.Fatalf("detail triage = %q, summary triage = %q", detail.Topic.Triage, complete.Topics[0].Triage)
+	}
+	if detail.Topic.Description != complete.Topics[0].Description {
+		t.Fatalf("detail description = %q, summary description = %q", detail.Topic.Description, complete.Topics[0].Description)
+	}
+	if !strings.Contains(detail.Topic.Description, "Triage: "+detail.Topic.Triage) {
+		t.Fatalf("topic description does not include triage note: %q", detail.Topic.Description)
+	}
+	if !containsTopicHeuristicNamed(detail.Topic.Heuristics, "importance") {
+		t.Errorf("topic heuristics missing importance. got: %v", topicHeuristicNames(detail.Topic.Heuristics))
 	}
 	docs := getMapleTopicDocuments(t, srv, caseID, topicID)
 	if got := len(docs.Documents); got != 1 {
@@ -248,6 +279,146 @@ func TestProcessCaseFailsCaseWhenClassifyDocumentFails(t *testing.T) {
 	}
 }
 
+func TestProcessCaseRunsGroupScanForUnfilteredDocuments(t *testing.T) {
+	classifier := newControlledClassifier(classificationReport{Documents: []classifiedDocument{
+		classifiedDoc("memo-1.txt", classifiedTopic{Title: "Procurement", Topic: "procurement"}),
+		classifiedDoc("memo-2.txt", classifiedTopic{Title: "Procurement", Topic: "procurement"}),
+	}}, nil)
+	classifier.documentReport = []heuristic{
+		{Name: "consistency", Signal: "positive", Rating: "high"},
+		{Name: "references", Signal: "positive", Rating: "high"},
+		{Name: "emotive_language", Signal: "negative", Rating: "low"},
+		{Name: "ideology_or_incentives", Signal: "negative", Rating: "low"},
+	}
+	classifier.groupReport = []heuristic{
+		{Name: "corroboration", Signal: "positive", Rating: "high", Description: "docs corroborate"},
+		{Name: "shared_references", Signal: "positive", Rating: "medium", Description: "shared invoice ids"},
+	}
+	classifier.groupCalls = make(chan groupCall, 1)
+	srv := newMapleServer(classifier)
+
+	caseID := postMapleCase(t, srv, []docInput{
+		{Filename: "memo-1.txt", Content: "first procurement memo"},
+		{Filename: "memo-2.txt", Content: "second procurement memo"},
+	})
+	complete := waitMapleStatus(t, srv, caseID, statusComplete)
+
+	select {
+	case call := <-classifier.groupCalls:
+		if got := len(call.documents); got != 2 {
+			t.Fatalf("group call documents = %d, want 2", got)
+		}
+		if call.topicTitle != "Procurement" {
+			t.Errorf("group call topic title = %q, want Procurement", call.topicTitle)
+		}
+	default:
+		t.Fatal("expected ClassifyGroup to be called")
+	}
+
+	topicID := complete.Topics[0].ID
+	detail := getMapleTopic(t, srv, caseID, topicID)
+	if !containsTopicHeuristicNamed(detail.Topic.Heuristics, "corroboration") {
+		t.Errorf("topic heuristics missing group heuristic. got: %v", topicHeuristicNames(detail.Topic.Heuristics))
+	}
+}
+
+func TestProcessCaseExcludesFilteredDocumentsFromGroupScan(t *testing.T) {
+	classifier := newControlledClassifier(classificationReport{Documents: []classifiedDocument{
+		classifiedDoc("filtered.txt", classifiedTopic{Title: "Procurement", Topic: "procurement"}),
+		classifiedDoc("kept-1.txt", classifiedTopic{Title: "Procurement", Topic: "procurement"}),
+		classifiedDoc("kept-2.txt", classifiedTopic{Title: "Procurement", Topic: "procurement"}),
+	}}, nil)
+	classifier.documentCalls = make(chan classifiedInput, 3)
+	classifier.groupReport = []heuristic{{Name: "corroboration", Signal: "positive", Rating: "medium"}}
+	classifier.groupCalls = make(chan groupCall, 1)
+	srv := newMapleServer(&perDocumentControlledClassifier{
+		controlledClassifier: classifier,
+		reportsByID: map[string][]heuristic{
+			"filtered.txt": {
+				{Name: "emotive_language", Signal: "negative", Rating: "medium"},
+				{Name: "ideology_or_incentives", Signal: "negative", Rating: "high"},
+			},
+			"kept-1.txt": {
+				{Name: "emotive_language", Signal: "negative", Rating: "low"},
+				{Name: "ideology_or_incentives", Signal: "negative", Rating: "low"},
+			},
+			"kept-2.txt": {
+				{Name: "emotive_language", Signal: "negative", Rating: "low"},
+				{Name: "ideology_or_incentives", Signal: "negative", Rating: "low"},
+			},
+		},
+	})
+
+	caseID := postMapleCase(t, srv, []docInput{
+		{Filename: "filtered.txt", Content: "filtered"},
+		{Filename: "kept-1.txt", Content: "kept one"},
+		{Filename: "kept-2.txt", Content: "kept two"},
+	})
+	waitMapleStatus(t, srv, caseID, statusComplete)
+
+	select {
+	case call := <-classifier.groupCalls:
+		if got := len(call.documents); got != 2 {
+			t.Fatalf("group call documents = %d, want 2", got)
+		}
+		for _, doc := range call.documents {
+			if doc.ID == "filtered.txt" {
+				t.Fatal("filtered document was included in group scan")
+			}
+		}
+	default:
+		t.Fatal("expected ClassifyGroup to be called")
+	}
+}
+
+func TestProcessCaseSkipsGroupScanWhenFewerThanTwoDocumentsRemain(t *testing.T) {
+	classifier := newControlledClassifier(classificationReport{Documents: []classifiedDocument{
+		classifiedDoc("filtered.txt", classifiedTopic{Title: "Procurement", Topic: "procurement"}),
+		classifiedDoc("kept.txt", classifiedTopic{Title: "Procurement", Topic: "procurement"}),
+	}}, nil)
+	classifier.groupCalls = make(chan groupCall, 1)
+	srv := newMapleServer(&perDocumentControlledClassifier{
+		controlledClassifier: classifier,
+		reportsByID: map[string][]heuristic{
+			"filtered.txt": {
+				{Name: "emotive_language", Signal: "negative", Rating: "medium"},
+				{Name: "ideology_or_incentives", Signal: "negative", Rating: "high"},
+			},
+			"kept.txt": {
+				{Name: "emotive_language", Signal: "negative", Rating: "low"},
+				{Name: "ideology_or_incentives", Signal: "negative", Rating: "low"},
+			},
+		},
+	})
+
+	caseID := postMapleCase(t, srv, []docInput{
+		{Filename: "filtered.txt", Content: "filtered"},
+		{Filename: "kept.txt", Content: "kept"},
+	})
+	waitMapleStatus(t, srv, caseID, statusComplete)
+
+	select {
+	case <-classifier.groupCalls:
+		t.Fatal("ClassifyGroup should not have been called")
+	default:
+	}
+}
+
+type perDocumentControlledClassifier struct {
+	*controlledClassifier
+	reportsByID map[string][]heuristic
+}
+
+func (c *perDocumentControlledClassifier) ClassifyDocument(ctx context.Context, document classifiedInput) ([]heuristic, error) {
+	if c.documentCalls != nil {
+		c.documentCalls <- document
+	}
+	if c.documentErr != nil {
+		return nil, c.documentErr
+	}
+	return c.reportsByID[document.ID], nil
+}
+
 func containsHeuristicNamed(hs []heuristic, name string) bool {
 	for _, h := range hs {
 		if h.Name == name {
@@ -257,7 +428,24 @@ func containsHeuristicNamed(hs []heuristic, name string) bool {
 	return false
 }
 
+func containsTopicHeuristicNamed(hs []topicHeuristic, name string) bool {
+	for _, h := range hs {
+		if h.Name == name {
+			return true
+		}
+	}
+	return false
+}
+
 func heuristicNames(hs []heuristic) []string {
+	out := make([]string, len(hs))
+	for i, h := range hs {
+		out[i] = h.Name
+	}
+	return out
+}
+
+func topicHeuristicNames(hs []topicHeuristic) []string {
 	out := make([]string, len(hs))
 	for i, h := range hs {
 		out[i] = h.Name

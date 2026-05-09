@@ -151,7 +151,7 @@ func (c *recordingChatCompleter) ChatCompletion(_ context.Context, req chatReque
 
 func TestMapleClassifierUsesInjectedChatCompleter(t *testing.T) {
 	completer := &recordingChatCompleter{
-		contents: []string{`{"documents":[{"id":"doc-1","topic":{"title":"Ops","topic":"ops","confidence":0.9},"document_type":{"topic":"memo","confidence":0.8},"sensitivity":{"level":2,"label":"medium","confidence":0.7},"rationale":"ops memo","claims":[]}]}`},
+		contents: []string{`{"documents":[{"id":"doc-1","topic":{"title":"Ops","topic":"ops","confidence":0.9,"importance":{"score":"medium","explanation":"Operational concern."}},"document_type":{"topic":"memo","confidence":0.8},"sensitivity":{"level":2,"label":"medium","confidence":0.7},"rationale":"ops memo","claims":[]}]}`},
 	}
 	classifier := mapleClassifier{
 		model:  "classification-model",
@@ -175,6 +175,12 @@ func TestMapleClassifierUsesInjectedChatCompleter(t *testing.T) {
 	}
 	if completer.requests[0].ResponseFormat.Type != "json_object" {
 		t.Errorf("response format = %q, want json_object", completer.requests[0].ResponseFormat.Type)
+	}
+	if report.Documents[0].Topic.Importance.Score != "medium" {
+		t.Errorf("importance score = %q, want medium", report.Documents[0].Topic.Importance.Score)
+	}
+	if !strings.Contains(completer.requests[0].Messages[0].Content, "topic.importance") {
+		t.Errorf("classification prompt does not request topic.importance: %q", completer.requests[0].Messages[0].Content)
 	}
 }
 
@@ -301,6 +307,112 @@ func TestMapleClassifierClassifyDocumentRepairsInvalidJSON(t *testing.T) {
 		if !strings.Contains(system, want) {
 			t.Errorf("repair system prompt missing %q (schema must be pinned). got: %s", want, system)
 		}
+	}
+}
+
+func TestMapleClassifierClassifyGroupReturnsParsedHeuristics(t *testing.T) {
+	completer := &recordingChatCompleter{
+		contents: []string{`{"heuristics":[
+			{"name":"corroboration","signal":"positive","score":"high","explanation":"docs corroborate"},
+			{"name":"shared_references","signal":"positive","score":"medium","explanation":"some shared invoice ids"},
+			{"name":"coordinated_framing","signal":"negative","score":"low","explanation":"varied tone"},
+			{"name":"shared_agenda","signal":"negative","score":"low","explanation":"no shared agenda"}
+		]}`},
+	}
+	classifier := mapleClassifier{model: "group-model", client: completer}
+
+	hs, err := classifier.ClassifyGroup(context.Background(), []classifiedInput{
+		{ID: "a.txt", Filename: "a.txt", Content: "alpha body"},
+		{ID: "b.txt", Filename: "b.txt", Content: "beta body"},
+	}, "Procurement")
+	if err != nil {
+		t.Fatalf("ClassifyGroup returned error: %v", err)
+	}
+	if len(hs) != 4 {
+		t.Fatalf("heuristics = %d, want 4", len(hs))
+	}
+
+	if len(completer.requests) != 1 {
+		t.Fatalf("requests = %d, want 1", len(completer.requests))
+	}
+	req := completer.requests[0]
+	if req.Model != "group-model" {
+		t.Errorf("model = %q, want group-model", req.Model)
+	}
+	if req.ResponseFormat.Type != "json_object" {
+		t.Errorf("response_format = %q, want json_object", req.ResponseFormat.Type)
+	}
+	prompt := req.Messages[0].Content
+	if strings.Contains(prompt, documentsTextPlaceholder) {
+		t.Error("rendered prompt still contains documents placeholder")
+	}
+	if strings.Contains(prompt, topicTitlePlaceholder) {
+		t.Error("rendered prompt still contains topic title placeholder")
+	}
+	for _, want := range []string{"Procurement", "--- Document: a.txt ---", "alpha body", "--- Document: b.txt ---", "beta body"} {
+		if !strings.Contains(prompt, want) {
+			t.Errorf("rendered prompt missing %q", want)
+		}
+	}
+
+	wantRating := map[string]string{
+		"corroboration":       "high",
+		"shared_references":   "medium",
+		"coordinated_framing": "low",
+		"shared_agenda":       "low",
+	}
+	for _, h := range hs {
+		if h.Rating != wantRating[h.Name] {
+			t.Errorf("%s rating = %q, want %q", h.Name, h.Rating, wantRating[h.Name])
+		}
+		if h.Signal == "" {
+			t.Errorf("%s signal is empty", h.Name)
+		}
+	}
+}
+
+func TestMapleClassifierClassifyGroupRepairsInvalidJSON(t *testing.T) {
+	completer := &recordingChatCompleter{
+		contents: []string{
+			`{"heuristics":[{"name":"corroboration","signal":"positive","score":"high","explanation": missing quotes}]}`,
+			`{"heuristics":[{"name":"corroboration","signal":"positive","score":"high","explanation":"corroborate"}]}`,
+		},
+	}
+	classifier := mapleClassifier{model: "group-model", client: completer}
+
+	hs, err := classifier.ClassifyGroup(context.Background(), []classifiedInput{
+		{ID: "x.txt", Content: "x"},
+	}, "Procurement")
+	if err != nil {
+		t.Fatalf("ClassifyGroup returned error after repair: %v", err)
+	}
+	if len(hs) != 1 {
+		t.Errorf("heuristics = %d, want 1", len(hs))
+	}
+	if len(completer.requests) != 2 {
+		t.Fatalf("requests = %d, want 2 (initial + repair)", len(completer.requests))
+	}
+	system := completer.requests[1].Messages[0].Content
+	for _, want := range []string{`"signal"`, `"score"`, `"explanation"`} {
+		if !strings.Contains(system, want) {
+			t.Errorf("repair system prompt missing %q. got: %s", want, system)
+		}
+	}
+}
+
+func TestBundleDocumentsForGroupScan(t *testing.T) {
+	out := bundleDocumentsForGroupScan([]classifiedInput{
+		{ID: "a.txt", Filename: "a.txt", Content: "alpha\n"},
+		{ID: "b.txt", Content: "beta"},
+	})
+	if !strings.Contains(out, "--- Document: a.txt ---") {
+		t.Error("missing first document header")
+	}
+	if !strings.Contains(out, "--- Document: b.txt ---") {
+		t.Error("missing second document header")
+	}
+	if !strings.Contains(out, "alpha") || !strings.Contains(out, "beta") {
+		t.Error("missing document content")
 	}
 }
 

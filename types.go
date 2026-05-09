@@ -13,6 +13,12 @@ type heuristic struct {
 	Description string `json:"description"`
 }
 
+type topicHeuristic struct {
+	Name        string `json:"name"`
+	Rating      string `json:"rating"`
+	Description string `json:"description"`
+}
+
 type topicSummary struct {
 	ID          int    `json:"id"`
 	Title       string `json:"title"`
@@ -29,12 +35,19 @@ type caseSummaryResponse struct {
 }
 
 type topicDetail struct {
-	ID            int         `json:"id"`
-	Title         string      `json:"title"`
-	Triage        string      `json:"triage"`
-	Description   string      `json:"description"`
-	DocumentCount int         `json:"document_count"`
-	Heuristics    []heuristic `json:"heuristics"`
+	ID            int              `json:"id"`
+	Title         string           `json:"title"`
+	Triage        string           `json:"triage"`
+	Description   string           `json:"description"`
+	DocumentCount int              `json:"document_count"`
+	Heuristics    []topicHeuristic `json:"heuristics"`
+}
+
+type triageRationale struct {
+	Importance      string `json:"importance"`
+	EvidenceQuality string `json:"evidence_quality"`
+	Final           string `json:"final"`
+	Description     string `json:"description"`
 }
 
 type topicDetailResponse struct {

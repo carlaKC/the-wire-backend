@@ -8,17 +8,21 @@ import (
 )
 
 // classifier is the model-backed contract used by the case-processing
-// pipeline. The two methods are siblings, not layers:
+// pipeline:
 //
 //   - Classify runs the case-level pipeline: one model call across the full
 //     document set returning topic assignments and per-document metadata.
 //   - ClassifyDocument runs the per-document heuristics pipeline: one model
 //     call per document returning four fixed heuristics.
+//   - ClassifyGroup runs the group heuristics pipeline: one model call for
+//     every topic group that has enough unfiltered documents to compare.
 //
-// processCase invokes both concurrently and merges their outputs.
+// processCase invokes them in that order so the group scan can use both topic
+// assignment and per-document filter decisions.
 type classifier interface {
 	Classify(ctx context.Context, documents []classifiedInput, existingTopics []topicCandidate) (classificationReport, error)
 	ClassifyDocument(ctx context.Context, document classifiedInput) ([]heuristic, error)
+	ClassifyGroup(ctx context.Context, documents []classifiedInput, topicTitle string) ([]heuristic, error)
 }
 
 // classifiedInput is the trimmed document the classifier sees: a stable per-
@@ -46,11 +50,12 @@ type classifiedDocument struct {
 }
 
 type classifiedTopic struct {
-	ID          int     `json:"id,omitempty"`
-	Title       string  `json:"title,omitempty"`
-	Description string  `json:"description,omitempty"`
-	Topic       string  `json:"topic"`
-	Confidence  float64 `json:"confidence"`
+	ID          int                  `json:"id,omitempty"`
+	Title       string               `json:"title,omitempty"`
+	Description string               `json:"description,omitempty"`
+	Topic       string               `json:"topic"`
+	Confidence  float64              `json:"confidence"`
+	Importance  classifiedImportance `json:"importance,omitempty"`
 }
 
 type topicCandidate struct {
@@ -63,6 +68,11 @@ type classifiedSensitivity struct {
 	Level      int     `json:"level"`
 	Label      string  `json:"label"`
 	Confidence float64 `json:"confidence"`
+}
+
+type classifiedImportance struct {
+	Score       string `json:"score"`
+	Explanation string `json:"explanation"`
 }
 
 type classifiedClaim struct {

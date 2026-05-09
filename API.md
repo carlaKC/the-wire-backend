@@ -51,13 +51,13 @@ curl http://localhost:8080/api/v1/cases/1/topics/1/documents
 - **Case** — one document dump. Created by POSTing a set of text documents. Identified by an integer.
 - **Topic** — a reusable grouping the service infers from submitted documents (e.g. "Financial irregularities"). Topic IDs are global within the running server process, so documents in a new case can be assigned to a topic created by an older case. Case endpoints return only topics represented in that case.
 - **Document** — one text file from the original submission. Each document belongs to exactly one topic.
-- **Heuristic** — a named graded signal: `{ name, signal, rating, description }`. Appears at the **topic level** (signal across the whole topic) and the **document level** (signal for that one document). Topic-level heuristics are an **open** set; document-level heuristics are a **closed** set of four (see [Document heuristics](#document-heuristics)).
+- **Heuristic** — a named graded assessment. Topic-level heuristics return `{ name, rating, description }` and are an **open** set. Document-level heuristics return `{ name, signal, rating, description }` and are a **closed** set of four (see [Document heuristics](#document-heuristics)).
 
 ## Enumerations
 
 - **Triage** (topic-level): `"high" | "medium" | "low"`. Use for visual emphasis — high = alert, medium = caution, low = informational.
-- **Heuristic rating**: `"high" | "medium" | "low"`. Polarity depends on the heuristic's `signal` (below).
-- **Heuristic signal**: `"positive" | "negative" | ""`. Tells the client whether a high `rating` is favorable or unfavorable for the submission. `positive` → high is good (e.g. high `consistency` is desirable). `negative` → high is bad (e.g. high `emotive_language` is concerning). Empty string means no directionality is asserted — render the rating neutrally and rely on the `description`. Topic-level heuristics currently always have an empty `signal`.
+- **Heuristic rating**: `"high" | "medium" | "low"`.
+- **Document heuristic signal**: `"positive" | "negative"`. Tells the client whether a high document heuristic `rating` is favorable or unfavorable for the submission. `positive` → high is good (e.g. high `consistency` is desirable). `negative` → high is bad (e.g. high `emotive_language` is concerning).
 
 ## Document heuristics
 
@@ -74,13 +74,33 @@ The names and signals are stable. The `rating` and `description` are produced pe
 
 Document responses include `filtered`, a boolean derived only from negative-signal heuristics. `filtered` is `true` when every negative heuristic has a `rating` of `medium` or `high`; positive heuristics do not affect this flag. If any negative heuristic is `low`, or if there are no negative heuristics, `filtered` is `false`.
 
+## Group heuristics
+
+Topic detail responses include topic-level heuristics from two sources:
+
+- server-derived topic summary heuristics, such as `sensitivity`, `claims`, `validation`, and `document_types`
+- model-derived group heuristics, produced by scanning the unfiltered documents in that case/topic as one corpus
+
+The group scan runs only after topic classification and per-document heuristics have completed. Documents with `filtered: true` are excluded from the group scan. If fewer than two unfiltered documents remain in a topic, the group scan is skipped for that topic and the topic detail returns only the server-derived topic summary heuristics.
+
+Current group heuristics are:
+
+| Name | Polarity | What it means |
+|------|--------|---------------|
+| `corroboration` | positive | Documents describe overlapping events, parties, or claims with consistent details. |
+| `shared_references` | positive | Concrete references recur across documents, enabling cross-checking. |
+| `coordinated_framing` | negative | Documents share suspiciously coordinated emotional framing or repeated rhetoric. |
+| `shared_agenda` | negative | Documents collectively appear to advance the same agenda, incentive, or vendetta rather than independent reporting. |
+
+Group heuristics are part of the open topic-level heuristic list. Clients should render any topic heuristic returned by the API and should not assume only these names will be present.
+
 ## Processing model
 
 `POST /cases` returns the case ID immediately. Analysis runs asynchronously, and the case progresses through `status` values on the case summary:
 
 | Status | Meaning |
 |--------|---------|
-| `processing` | Analysis is in flight. `topics` may be empty or partial. Per-document `heuristics` may be empty (the per-document analysis pass runs concurrently with topic classification and may not have produced output yet). Topic endpoints (`/topics/{tid}` and `/topics/{tid}/documents`) return `404 topic_not_found` until the topic is materialized. |
+| `processing` | Analysis is in flight. The server first classifies documents into topics, then runs per-document heuristics and computes `filtered`, then runs group heuristics for each topic's unfiltered documents. `topics` is empty until the full case result is committed. Topic endpoints (`/topics/{tid}` and `/topics/{tid}/documents`) return `404 topic_not_found` until the result is committed. |
 | `complete` | Analysis finished. All data populated. |
 | `failed` | Analysis errored. The case is terminal; further polling will not change the result. |
 
@@ -98,8 +118,10 @@ Cases are stored in process memory. Restarting the server clears previously crea
 - The server sends existing global topics to Maple. Maple assigns each document to an existing topic when one fits, or returns a new topic title/description when no existing topic fits.
 - Topic IDs are assigned by the server and are reusable across cases.
 - The original submitted filename/content is preserved in document responses.
-- Topic `triage` on case endpoints is derived from the highest sensitivity seen for that topic in that case: level 1 -> `low`, level 2 -> `medium`, levels 3-4 -> `high`.
+- Topic `triage` on case endpoints is based on LLM-assessed topic importance gated by evidence quality. If an older model response omits topic importance, the server falls back to the highest sensitivity seen for that topic in that case: level 1 -> `low`, level 2 -> `medium`, levels 3-4 -> `high`.
+- Topic `description` includes the topic summary plus a short triage note.
 - Document IDs are assigned by the server for each case.
+- Group heuristics are attached to the topic detail for the same case/topic. The server excludes `filtered` documents before building the group scan input.
 
 ---
 
@@ -153,13 +175,13 @@ Case summary — the topics the service inferred for this dump.
       "id": 1,
       "title": "Procurement",
       "triage": "high",
-      "description": "The memo discusses vendor approval gaps."
+      "description": "The memo discusses vendor approval gaps. Triage: high because importance is high and evidence quality is medium."
     },
     {
       "id": 2,
       "title": "Communications Messaging",
       "triage": "medium",
-      "description": "The email discusses moving conversations off email."
+      "description": "The email discusses moving conversations off email. Triage: medium because importance is medium and evidence quality is medium."
     }
   ]
 }
@@ -189,17 +211,21 @@ Topic detail with topic-level heuristics for this case. The `topic.id` is a glob
     "id": 1,
     "title": "Procurement",
     "triage": "high",
-    "description": "The memo discusses vendor approval gaps.",
+    "description": "The memo discusses vendor approval gaps. Triage: high because importance is high and evidence quality is medium.",
     "document_count": 1,
     "heuristics": [
-      { "name": "sensitivity", "signal": "", "rating": "high", "description": "Highest sensitivity level in this topic is 3." },
-      { "name": "claims", "signal": "", "rating": "medium", "description": "1 factual claim(s) extracted in this topic." }
+      { "name": "importance", "rating": "high", "description": "Importance: The topic involves payment irregularities and alleged concealment from audit. Evidence quality is medium." },
+      { "name": "evidence_quality", "rating": "medium", "description": "Evidence quality used to gate final topic triage." },
+      { "name": "sensitivity", "rating": "high", "description": "Highest sensitivity level in this topic is 3." },
+      { "name": "claims", "rating": "medium", "description": "1 factual claim(s) extracted in this topic." },
+      { "name": "corroboration", "rating": "high", "description": "Multiple documents describe the same vendor payments with consistent details." },
+      { "name": "coordinated_framing", "rating": "low", "description": "The documents use restrained, independent factual framing." }
     ]
   }
 }
 ```
 
-`heuristics` is an open list — render every entry the server returns. Don't assume a fixed length or fixed names. Topic-level heuristics currently emit an empty `signal`; render their `rating` neutrally.
+`heuristics` is an open list — render every entry the server returns. Don't assume a fixed length or fixed names.
 
 **Errors:**
 - `404 case_not_found`, `404 topic_not_found`.
@@ -210,7 +236,7 @@ Topic detail with topic-level heuristics for this case. The `topic.id` is a glob
 
 The documents from this case that are assigned to the topic, with their raw content and per-document heuristics. Even when the topic ID exists in other cases, this endpoint returns only documents from `{case_id}`.
 
-Each document carries the closed set of four per-document heuristics described in [Document heuristics](#document-heuristics). The `heuristics` array may be empty if the per-document analysis pass produced nothing for that document (e.g. while the case is still `processing`).
+Each document carries the closed set of four per-document heuristics described in [Document heuristics](#document-heuristics).
 
 `filtered` indicates that the document's negative-signal heuristics all rated `medium` or `high`, so clients can exclude or de-emphasize it when presenting the topic group.
 
@@ -263,18 +289,24 @@ All `4xx`/`5xx` responses share this shape:
 
 1. **Submit** — user pastes/uploads text documents. `POST /cases`. Capture `case_id` and route to the case overview.
 2. **Overview** — `GET /cases/{case_id}`. If `status` is `processing`, show a pending state and poll. Once `complete`, render topic cards. Sort client-side by triage (high → medium → low) to draw the eye.
-3. **Drill into a topic** — `GET /cases/{case_id}/topics/{topic_id}` for the topic-level signal. You can also fire `GET /cases/{case_id}/topics/{topic_id}/documents` in parallel and render documents in a side panel or below the heuristics.
+3. **Drill into a topic** — `GET /cases/{case_id}/topics/{topic_id}` for the topic-level assessment. You can also fire `GET /cases/{case_id}/topics/{topic_id}/documents` in parallel and render documents in a side panel or below the heuristics.
 4. **Inspect a document** — within the documents view, expandable cards showing filename, raw content, and per-doc heuristics.
 
 ## TypeScript types
 
 ```ts
 type Rating = "high" | "medium" | "low";
-type Signal = "positive" | "negative" | "";
+type Signal = "positive" | "negative";
 
 export interface Heuristic {
   name: string;
   signal: Signal;
+  rating: Rating;
+  description: string;
+}
+
+export interface TopicHeuristic {
+  name: string;
   rating: Rating;
   description: string;
 }
@@ -304,7 +336,7 @@ export interface TopicDetailResponse {
     triage: Rating;
     description: string;
     document_count: number;
-    heuristics: Heuristic[];
+    heuristics: TopicHeuristic[];
   };
 }
 

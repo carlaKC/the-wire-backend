@@ -56,62 +56,52 @@ func (s *mapleServer) createCaseHandler(w http.ResponseWriter, r *http.Request) 
 	writeJSON(w, http.StatusCreated, createCaseResponse{CaseID: caseID})
 }
 
-// processCase coordinates the two case-processing pipelines. They are
-// independent and run concurrently:
+// processCase coordinates the case-processing pipeline:
 //
 //   - classifyCase runs classification for the whole case (topic assignment +
 //     per-document metadata via the case-classification prompt).
 //   - classifyDocuments fans out the document-heuristics prompt across each
 //     document and collects per-document heuristic scores.
+//   - classifyGroups runs one group-heuristics prompt for each topic with at
+//     least two unfiltered documents.
 //
-// Both goroutines `defer wg.Done()` so a panic can't leak the WaitGroup, and
-// processCase blocks on Wait before deciding the case's terminal state. A
-// failure in either pipeline marks the whole case failed; only when both
+// A failure in any stage marks the whole case failed; only when all stages
 // succeed does the classification report get committed.
 func (s *mapleServer) processCase(caseID int, createdAt time.Time, documents []classifiedInput) {
 	ctx := context.Background()
 	start := time.Now()
 
-	var (
-		wg              sync.WaitGroup
-		report          classificationReport
-		classifyErr     error
-		heuristicsByDoc map[string][]heuristic
-		documentsErr    error
-	)
-
-	wg.Add(2)
-	go func() {
-		defer wg.Done()
-		stageStart := time.Now()
-		log.Printf("case %d: classifyCase started", caseID)
-		report, classifyErr = s.classifyCase(ctx, documents)
-		if classifyErr == nil {
-			log.Printf("case %d: classifyCase completed in %s", caseID, time.Since(stageStart).Round(time.Millisecond))
-		}
-	}()
-	go func() {
-		defer wg.Done()
-		stageStart := time.Now()
-		log.Printf("case %d: classifyDocuments started", caseID)
-		heuristicsByDoc, documentsErr = s.classifyDocuments(ctx, documents)
-		if documentsErr == nil {
-			log.Printf("case %d: classifyDocuments completed in %s (%d documents)", caseID, time.Since(stageStart).Round(time.Millisecond), len(documents))
-		}
-	}()
-	wg.Wait()
-
-	if classifyErr != nil {
-		log.Printf("case %d: classifyCase failed: %v", caseID, classifyErr)
+	stageStart := time.Now()
+	log.Printf("case %d: classifyCase started", caseID)
+	report, err := s.classifyCase(ctx, documents)
+	if err != nil {
+		log.Printf("case %d: classifyCase failed: %v", caseID, err)
 		s.store.markFailed(caseID)
 		return
 	}
-	if documentsErr != nil {
-		log.Printf("case %d: classifyDocuments failed: %v", caseID, documentsErr)
+	log.Printf("case %d: classifyCase completed in %s", caseID, time.Since(stageStart).Round(time.Millisecond))
+
+	stageStart = time.Now()
+	log.Printf("case %d: classifyDocuments started", caseID)
+	heuristicsByDoc, err := s.classifyDocuments(ctx, documents)
+	if err != nil {
+		log.Printf("case %d: classifyDocuments failed: %v", caseID, err)
 		s.store.markFailed(caseID)
 		return
 	}
-	s.store.replaceClassified(caseID, createdAt, documents, report, heuristicsByDoc)
+	log.Printf("case %d: classifyDocuments completed in %s (%d documents)", caseID, time.Since(stageStart).Round(time.Millisecond), len(documents))
+
+	stageStart = time.Now()
+	log.Printf("case %d: classifyGroups started", caseID)
+	groupHeuristicsByKey, err := s.classifyGroups(ctx, documents, report, heuristicsByDoc)
+	if err != nil {
+		log.Printf("case %d: classifyGroups failed: %v", caseID, err)
+		s.store.markFailed(caseID)
+		return
+	}
+	log.Printf("case %d: classifyGroups completed in %s (%d groups)", caseID, time.Since(stageStart).Round(time.Millisecond), len(groupHeuristicsByKey))
+
+	s.store.replaceClassified(caseID, createdAt, documents, report, heuristicsByDoc, groupHeuristicsByKey)
 	log.Printf("case %d: complete (elapsed %s)", caseID, time.Since(start).Round(time.Millisecond))
 }
 
@@ -165,6 +155,83 @@ func (s *mapleServer) classifyDocuments(ctx context.Context, documents []classif
 			out[d.ID] = hs
 			mu.Unlock()
 		}(d)
+	}
+	wg.Wait()
+
+	if len(errs) > 0 {
+		return nil, errors.Join(errs...)
+	}
+	return out, nil
+}
+
+// classifyGroups runs one ClassifyGroup call per case/topic bucket after the
+// per-document filter decisions are known. Filtered documents are excluded; a
+// bucket with fewer than two remaining documents is skipped.
+func (s *mapleServer) classifyGroups(ctx context.Context, documents []classifiedInput, report classificationReport, heuristicsByDoc map[string][]heuristic) (map[string][]heuristic, error) {
+	inputByID := map[string]classifiedInput{}
+	for _, d := range documents {
+		inputByID[d.ID] = d
+	}
+
+	type groupBucket struct {
+		title     string
+		documents []classifiedInput
+	}
+	groups := map[string]*groupBucket{}
+	for _, classified := range report.Documents {
+		input, ok := inputByID[classified.ID]
+		if !ok || shouldFilterDocument(heuristicsByDoc[classified.ID]) {
+			continue
+		}
+
+		key := groupKeyForTopic(classified.Topic)
+		bucket, ok := groups[key]
+		if !ok {
+			bucket = &groupBucket{title: groupTitleForTopic(classified.Topic)}
+			groups[key] = bucket
+		}
+		if bucket.title == "" {
+			bucket.title = groupTitleForTopic(classified.Topic)
+		}
+		bucket.documents = append(bucket.documents, input)
+	}
+
+	out := make(map[string][]heuristic, len(groups))
+	var (
+		wg   sync.WaitGroup
+		mu   sync.Mutex
+		errs []error
+	)
+	sem := make(chan struct{}, maxConcurrentDocumentClassifications)
+
+	for key, bucket := range groups {
+		if len(bucket.documents) < 2 {
+			continue
+		}
+		wg.Add(1)
+		go func(key string, bucket *groupBucket) {
+			defer wg.Done()
+			select {
+			case sem <- struct{}{}:
+			case <-ctx.Done():
+				mu.Lock()
+				errs = append(errs, fmt.Errorf("group %s: %w", key, ctx.Err()))
+				mu.Unlock()
+				return
+			}
+			defer func() { <-sem }()
+
+			hs, err := s.classifier.ClassifyGroup(ctx, bucket.documents, bucket.title)
+			if err != nil {
+				mu.Lock()
+				errs = append(errs, fmt.Errorf("group %s: %w", key, err))
+				mu.Unlock()
+				return
+			}
+			mu.Lock()
+			out[key] = hs
+			mu.Unlock()
+		}(key, bucket)
 	}
 	wg.Wait()
 

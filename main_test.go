@@ -1,6 +1,7 @@
 package main
 
 import (
+	"strings"
 	"testing"
 	"time"
 )
@@ -19,7 +20,7 @@ func TestReplaceClassifiedReusesGlobalTopicAcrossCases(t *testing.T) {
 			Topic:       "procurement",
 			Confidence:  0.95,
 		}),
-	}}, nil)
+	}}, nil, nil)
 
 	caseOne, ok := store.get(caseOneID)
 	if !ok {
@@ -51,7 +52,7 @@ func TestReplaceClassifiedReusesGlobalTopicAcrossCases(t *testing.T) {
 			Topic:      "procurement",
 			Confidence: 0.92,
 		}),
-	}}, nil)
+	}}, nil, nil)
 
 	caseTwo, ok := store.get(caseTwoID)
 	if !ok {
@@ -92,7 +93,7 @@ func TestReplaceClassifiedFallsBackWhenModelReturnsUnknownTopicID(t *testing.T) 
 			Topic:       "foreign_influence",
 			Confidence:  0.88,
 		}),
-	}}, nil)
+	}}, nil, nil)
 
 	data, ok := store.get(caseID)
 	if !ok {
@@ -121,7 +122,7 @@ func TestReplaceClassifiedMergesNewTopicsByTitle(t *testing.T) {
 	}, classificationReport{Documents: []classifiedDocument{
 		classifiedDoc("one.txt", classifiedTopic{Title: "Procurement", Description: "Purchasing issues.", Topic: "procurement"}),
 		classifiedDoc("two.txt", classifiedTopic{Title: " procurement ", Description: "Vendor issues.", Topic: "procurement"}),
-	}}, nil)
+	}}, nil, nil)
 
 	data, ok := store.get(caseID)
 	if !ok {
@@ -152,7 +153,7 @@ func TestReplaceClassifiedMarksDocumentFilteredWhenAllNegativeHeuristicsAreMediu
 			{Name: "emotive_language", Signal: "negative", Rating: "medium"},
 			{Name: "ideology_or_incentives", Signal: "negative", Rating: "high"},
 		},
-	})
+	}, nil)
 
 	data, ok := store.get(caseID)
 	if !ok {
@@ -162,6 +163,114 @@ func TestReplaceClassifiedMarksDocumentFilteredWhenAllNegativeHeuristicsAreMediu
 	doc := data.documents[topicID].Documents[0]
 	if !doc.Filtered {
 		t.Fatal("document filtered = false, want true")
+	}
+}
+
+func TestTopicTriageUsesLLMImportanceAndEvidenceQuality(t *testing.T) {
+	tests := []struct {
+		name       string
+		importance classifiedImportance
+		heuristics []heuristic
+		want       string
+	}{
+		{
+			name:       "high importance with good quality stays high",
+			importance: classifiedImportance{Score: "high", Explanation: "Payment concealment is important."},
+			heuristics: []heuristic{
+				{Name: "consistency", Signal: "positive", Rating: "high"},
+				{Name: "references", Signal: "positive", Rating: "high"},
+				{Name: "emotive_language", Signal: "negative", Rating: "low"},
+				{Name: "ideology_or_incentives", Signal: "negative", Rating: "low"},
+			},
+			want: "high",
+		},
+		{
+			name:       "high importance with poor quality is gated to medium",
+			importance: classifiedImportance{Score: "high", Explanation: "Payment concealment is important."},
+			heuristics: []heuristic{
+				{Name: "consistency", Signal: "positive", Rating: "low"},
+				{Name: "references", Signal: "positive", Rating: "low"},
+				{Name: "emotive_language", Signal: "negative", Rating: "high"},
+				{Name: "ideology_or_incentives", Signal: "negative", Rating: "high"},
+			},
+			want: "medium",
+		},
+		{
+			name:       "medium importance with poor quality becomes low",
+			importance: classifiedImportance{Score: "medium", Explanation: "Process issue."},
+			heuristics: []heuristic{
+				{Name: "consistency", Signal: "positive", Rating: "low"},
+				{Name: "references", Signal: "positive", Rating: "low"},
+				{Name: "emotive_language", Signal: "negative", Rating: "high"},
+				{Name: "ideology_or_incentives", Signal: "negative", Rating: "high"},
+			},
+			want: "low",
+		},
+		{
+			name:       "low importance stays low with good quality",
+			importance: classifiedImportance{Score: "low", Explanation: "Minor issue."},
+			heuristics: []heuristic{
+				{Name: "consistency", Signal: "positive", Rating: "high"},
+				{Name: "references", Signal: "positive", Rating: "high"},
+				{Name: "emotive_language", Signal: "negative", Rating: "low"},
+				{Name: "ideology_or_incentives", Signal: "negative", Rating: "low"},
+			},
+			want: "low",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			store := newClassifiedCaseStore()
+			createdAt := time.Date(2026, 5, 9, 12, 0, 0, 0, time.UTC)
+			caseID := store.create(emptyCaseData(createdAt, 1))
+			topic := classifiedTopic{Title: "Procurement", Topic: "procurement", Importance: tt.importance}
+			store.replaceClassified(caseID, createdAt, []classifiedInput{
+				{ID: "memo.txt", Filename: "memo.txt", Content: "Memo body."},
+			}, classificationReport{Documents: []classifiedDocument{
+				classifiedDoc("memo.txt", topic),
+			}}, map[string][]heuristic{"memo.txt": tt.heuristics}, nil)
+
+			data, ok := store.get(caseID)
+			if !ok {
+				t.Fatal("case was not stored")
+			}
+			got := data.summary.Topics[0]
+			if got.Triage != tt.want {
+				t.Fatalf("triage = %q, want %q", got.Triage, tt.want)
+			}
+			if !strings.Contains(got.Description, "Triage: "+tt.want) {
+				t.Fatalf("description does not include triage rationale: %q", got.Description)
+			}
+		})
+	}
+}
+
+func TestTopicTriageFallsBackToSensitivityWhenImportanceMissing(t *testing.T) {
+	store := newClassifiedCaseStore()
+	createdAt := time.Date(2026, 5, 9, 12, 0, 0, 0, time.UTC)
+	caseID := store.create(emptyCaseData(createdAt, 1))
+	doc := classifiedDoc("memo.txt", classifiedTopic{Title: "Procurement", Topic: "procurement"})
+	doc.Sensitivity = classifiedSensitivity{Level: 3, Label: "high", Confidence: 0.9}
+
+	store.replaceClassified(caseID, createdAt, []classifiedInput{
+		{ID: "memo.txt", Filename: "memo.txt", Content: "Memo body."},
+	}, classificationReport{Documents: []classifiedDocument{doc}}, map[string][]heuristic{
+		"memo.txt": {
+			{Name: "consistency", Signal: "positive", Rating: "high"},
+			{Name: "references", Signal: "positive", Rating: "high"},
+			{Name: "emotive_language", Signal: "negative", Rating: "low"},
+			{Name: "ideology_or_incentives", Signal: "negative", Rating: "low"},
+		},
+	}, nil)
+
+	data, ok := store.get(caseID)
+	if !ok {
+		t.Fatal("case was not stored")
+	}
+	got := data.summary.Topics[0]
+	if got.Triage != "high" {
+		t.Fatalf("triage = %q, want high", got.Triage)
 	}
 }
 
