@@ -235,16 +235,16 @@ func TestMapleClassifierClassifyDocumentReturnsParsedHeuristics(t *testing.T) {
 
 	// score → Rating, explanation → Description, signal passes through verbatim
 	wantRating := map[string]string{
-		"consistency":            "high",
-		"references":             "medium",
-		"emotive_language":       "low",
-		"ideology": "low",
+		"consistency":      "high",
+		"references":       "medium",
+		"emotive_language": "low",
+		"ideology":         "low",
 	}
 	wantSignal := map[string]string{
-		"consistency":            "positive",
-		"references":             "positive",
-		"emotive_language":       "negative",
-		"ideology": "negative",
+		"consistency":      "positive",
+		"references":       "positive",
+		"emotive_language": "negative",
+		"ideology":         "negative",
 	}
 	for _, h := range classification.Heuristics {
 		if h.Rating != wantRating[h.Name] {

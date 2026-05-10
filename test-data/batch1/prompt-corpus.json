@@ -1,0 +1,116 @@
+[
+  {
+    "document": "tip1.txt",
+    "consistency": {
+      "expected": "low",
+      "explanation": "The tip contains two distinct internal contradictions a careful reviewer should flag. (1) TEMPORAL: 'Tilden was promoted to Deputy Director in January 2023' but the Northbridge contract 'signed in November 2022' is described as 'one of his first acts in the new role.' November 2022 precedes January 2023, so the contract cannot have been signed in his Deputy Director role. (2) NUMERICAL: 'Halverson & Pike has received seven contracts... totaling approximately $4.8 million' but the four largest sum to $5.5 million ($2.1M + $1.4M + $1.1M + $0.9M), which cannot exceed the seven-contract total. Either the headline figure or one of the line items is wrong."
+    },
+    "references": {
+      "expected": "high",
+      "explanation": "Multiple specific, externally checkable references: named entity (Westmark County Water Authority), named individuals with roles (Marcus Tilden, Linda Choe, Devin Pike, Janet Mwangi), named firm (Halverson & Pike), four contracts with dollar amounts and dates, club name (Lake Westmark fishing club), and specific document artefacts (rubrics, club newsletter photos)."
+    },
+    "emotive_language": {
+      "expected": "low",
+      "explanation": "Tone is restrained and factual. No insults, inflammatory wording, or personal attacks. The source even hedges (\"I am not alleging this is illegal on its face\"). Description of the alleged pattern stays procedural."
+    },
+    "ideology": {
+      "expected": "low",
+      "explanation": "Reads as observational reporting of a procurement pattern from inside the office. No political framing, no obvious financial incentive, no personal vendetta language. The source explicitly limits the strength of their claim."
+    }
+  },
+  {
+    "document": "tip2.txt",
+    "consistency": {
+      "expected": "medium",
+      "explanation": "ROLE / ACCESS ambiguity: the source identifies as 'a clinical data analyst on the Phase III program' but later writes 'I was in the room when this decision was made' regarding an Executive Risk Committee meeting attended by the CEO, CMO, and General Counsel. Clinical data analysts are not typical attendees at executive risk committee meetings. The source may have meant they reviewed records of the meeting, attended in a note-taker capacity, or learned about it secondhand, and the distinction matters for how the tip is corroborated. This is not a hard contradiction in events, but a meaningful unresolved question about access — which fits 'minor ambiguities or unclear chronology, but largely coherent.'"
+    },
+    "references": {
+      "expected": "high",
+      "explanation": "Rich, externally checkable detail: company (Caldera Therapeutics), drug (vemorelibant), indication (atopic dermatitis), regulatory milestone (PDUFA date, NDA submission), specific people with roles (Anita Korhonen, Felipe Salgado, Brian Westmore), specific dating ('beginning in approximately February 2025'), specific clinical detail ('eleven cases... Grade 2 cardiac dysrhythmia'), and named artefacts (database snapshots, calendar entries, email subject line)."
+    },
+    "emotive_language": {
+      "expected": "low",
+      "explanation": "Tone is clinical and procedural. No inflammatory wording or personal attacks. Even the framing of the safety concern ('would likely have triggered additional FDA queries') is restrained and qualified."
+    },
+    "ideology": {
+      "expected": "low",
+      "explanation": "Source presents observed events, not advocacy. No political framing, no obvious personal benefit (still employed), no vendetta-style language about the named executives. The clinical-safety motivation is consistent with their stated role rather than evidence of agenda."
+    }
+  },
+  {
+    "document": "tip3.txt",
+    "consistency": {
+      "expected": "high",
+      "explanation": "CLEAN — internally consistent. Timeline (worked 2019 to October 2024, observed pattern 'at least the last three years'), roles (line technician, plant manager Doug Renner), and details about volume, timing of discharges, and downstream watershed are all coherent with each other. No contradictions, role drift, or impossible sequences."
+    },
+    "references": {
+      "expected": "high",
+      "explanation": "Specific and checkable: company name (Trenholm Plating Works), location (Cooper's Forge, Ohio), watershed (Beaver Run Creek into Maumee), named manager (Doug Renner), discharge timing pattern, volume estimates, named processes (chrome and nickel plating, hexavalent chromium), and specific documentary artefacts (three internal logs from 2023 documenting rinse-water discrepancies)."
+    },
+    "emotive_language": {
+      "expected": "low",
+      "explanation": "Restrained and descriptive throughout. No insults or inflammatory rhetoric. Even when describing protective concerns about colleagues ('I do not want to expose them'), the tone is matter-of-fact."
+    },
+    "ideology": {
+      "expected": "low",
+      "explanation": "Source explicitly disclaims a vendetta angle: 'I left Trenholm because of an unrelated injury, not because of this. I am not in litigation with the company.' Frames the concern as environmental rather than political or personal."
+    }
+  },
+  {
+    "document": "tip4.txt",
+    "consistency": {
+      "expected": "low",
+      "explanation": "Two distinct internal contradictions a reviewer should flag. (1) INTERNAL FACTUAL CONTRADICTION: source states 'I was alone with him in that hallway. There was no one else there' describing the coat-check incident, then later writes 'Tomás and a senior associate named Priya, saw him follow me out of the dining room toward the coat check that night.' The two claims about who witnessed the incident cannot both be true as stated; the source may have meant the colleagues saw him follow but did not see the encounter itself, but a reviewer needs that resolved before naming witnesses. (2) SCOPE / IDENTITY DRIFT: firm is named 'Bramwell Strategic Group' early in the tip and 'Bramwell Strategy Group' in the final paragraph. A one-word drift in the entity name is the kind of thing a reviewer should verify against public records before publishing — the correct legal name matters for any subsequent reporting and may indicate a typo, a recent rebrand, or that the source has the name slightly wrong."
+    },
+    "references": {
+      "expected": "medium",
+      "explanation": "Some concrete references — named individuals (Eli Castellano, Pamela Voss, Mark Dietrich), firm name, specific date and venue (December 2023 holiday dinner at the Pavilion Room of the Carlyle Hotel), HR meeting in February 2024, headquarters in Boston — but other claims are necessarily second-hand or anonymized ('R.', 'three other women I am aware of who experienced incidents in 2022 and 2023. I don't have permission to name them'). Mixed verifiability."
+    },
+    "emotive_language": {
+      "expected": "medium",
+      "explanation": "Some emotionally charged language: 'I'm scared but I'm more angry than scared at this point,' 'That was the opposite of being addressed,' 'Bramwell Strategy Group will protect Castellano if no one outside the firm knows.' The framing about HR/legal complicity ('Castellano is not a rogue actor. Voss in HR knew. The firm's general counsel, Mark Dietrich, definitely knew') is direct and accusatory. Not dominated by personal attacks but the rhetorical temperature is meaningfully higher than the other tips."
+    },
+    "ideology": {
+      "expected": "low",
+      "explanation": "No political or ideological framing. Source has a clear personal stake but presents specific observed conduct rather than advancing an agenda unrelated to the events. The motivation expressed is preventing further harm to other women, which is consistent with the substance of the report rather than evidence of vendetta or self-interest."
+    }
+  },
+  {
+    "document": "tip5.txt",
+    "consistency": {
+      "expected": "low",
+      "explanation": "SOURCING / EVIDENCE inconsistency a reviewer should flag. Source writes 'I have audio recordings of three of these arrangements being discussed' and then describes the first one as 'There was no recording system on the CFO's phone, but I was at my desk in the adjacent office and could hear the call clearly through the wall. I documented the entire conversation in my notebook.' Hearing a call through a wall and writing it down is not an audio recording. The source may have audio for the other two incidents and conflated them, or may not have audio at all, and the distinction is critical because contemporaneous notes and recordings have very different evidentiary weight. This is a meaningful contradiction about the nature of the evidence held, which fits 'major contradictions' rather than 'minor ambiguities.'"
+    },
+    "references": {
+      "expected": "high",
+      "explanation": "Rich, externally checkable references: named individuals with roles (Lyle Ashbury District 6 contracting supervisor, Roy Tannehill CFO), named firms (Marcellus Paving Company, State DOT), specific venue (Charter House steakhouse off Route 19), specific dates (May 14, 2024) and times (3:47 PM), specific dollar ranges and inflation percentages, specific contract count (seventeen change orders), and explicit reference to publicly obtainable counter-records (DOT-side approval signatures via records request)."
+    },
+    "emotive_language": {
+      "expected": "low",
+      "explanation": "Restrained throughout. Mentions of Tannehill being 'litigious' and Ashbury having 'friends in state law enforcement' are framed as factual concerns about retaliation, not as inflammatory accusations. No insults or personal attacks."
+    },
+    "ideology": {
+      "expected": "low",
+      "explanation": "No political or ideological framing. Source describes a kickback pattern rather than advancing an agenda. Acknowledges their own retreat ('walked away from the situation') and is conditioning testimony on protection rather than seeking attention. No obvious financial incentive or vendetta."
+    }
+  },
+  {
+    "document": "tip6.txt",
+    "consistency": {
+      "expected": "high",
+      "explanation": "CLEAN — internally consistent. Roles (senior revenue accountant since 2022), the described mechanism (final-two-week tranche of multi-year subscription contracts with backdated 'early start' clauses), and supporting artefacts (spreadsheet of 41 contracts Q4 2024 through Q2 2025, internal escalation history) are coherent with each other. No timeline contradictions, role drift, or conflicting claims about the events."
+    },
+    "references": {
+      "expected": "high",
+      "explanation": "Specific and checkable: named issuer (Lattice Telemetry, publicly traded, Austin HQ), specific accounting standard (ASC 606), quantified Q2 2025 figure ($14.3M, ~7% of reported revenue), exact artefact counts (spreadsheet of 41 contracts), and a quoted internal email phrase with attribution ('VP of Sales instructs deal desk staff to \"make the math work for the quarter\"'). Multiple independently checkable threads."
+    },
+    "emotive_language": {
+      "expected": "low",
+      "explanation": "Professional and procedural throughout. No insults, inflammatory phrasing, or personal attacks. The escalation history is described matter-of-factly."
+    },
+    "ideology": {
+      "expected": "low",
+      "explanation": "No political or ideological framing. The reasoning for going to a journalist before the SEC is articulated as personal risk management ('not yet ready to put my name on a federal filing'), which is consistent with the substance of the tip rather than evidence of agenda. No vendetta language."
+    }
+  }
+]
