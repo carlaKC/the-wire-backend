@@ -1,0 +1,24 @@
+TIP 6: Cardiac adverse event recoding before NDA submission at Caldera Pharmaceuticals
+CHANNEL: encrypted email
+RECEIVED: 27 April 2026
+
+I am writing about Caldera Pharmaceuticals, a Boston-headquartered diversified pharmaceutical company. I work as a clinical data analyst on the Phase III pivotal program for vemorelibant, the company's lead candidate for moderate-to-severe atopic dermatitis. The drug is currently under FDA review with a PDUFA action date in Q3 2026.
+
+I am reporting that Caldera reclassified a cluster of cardiac adverse events from the Phase III pivotal trial before the NDA submission was finalized, in a way that I believe materially understates the drug's cardiac safety profile in the data presented to FDA.
+
+In approximately February 2026, the Executive Risk Committee — which includes our CEO Anita Korhonen, CMO Dr. Felipe Salgado, and General Counsel Brian Westmore — directed the safety team to reclassify eleven cases that had originally been coded as "Grade 2 cardiac dysrhythmia, treatment-related" in the integrated safety database. After the reclassification, those eleven cases were coded as "Grade 1 dysrhythmia, treatment relationship indeterminate." The recoded dataset was the version submitted to FDA.
+
+I attended the 06 February meeting where the reclassification was discussed. The discussion lasted approximately forty minutes. Dr. Salgado initially argued against reclassification on the grounds that the temporal pattern across the eleven cases — onset within 14 days of dose initiation in nine of eleven — was clinically suggestive of treatment relationship. He was overruled after Westmore raised concerns about labeling implications and commercial impact. Korhonen made the final call. Westmore subsequently drafted standardized rationale language that was inserted into the SAE narratives.
+
+The clinical relevance of the recoding is that, at Grade 2 with attributed treatment relationship, the cluster would likely have triggered an FDA safety query and possibly a label warning around cardiac monitoring. At Grade 1 with indeterminate causality, the cluster falls below the threshold that would prompt either action.
+
+I have access to both the pre-recoding and post-recoding database snapshots. The case-level coding changes are visible in the audit trail. I also have:
+
+- The agenda and meeting calendar entry for the 06 February session.
+- An email chain in which Westmore circulates the draft narrative language under the subject "revised SAE rationales — for biostat review."
+- The pre-recoding version of the integrated safety summary table that was used in the December 2025 internal sign-off.
+- The post-recoding version that was included in the NDA submission package.
+
+I want to be clear about what I am and am not alleging. I am not, on the basis of these eleven cases alone, alleging that vemorelibant has unacceptable cardiac risk. I am alleging that the safety dataset Caldera submitted to FDA does not reflect the original investigator-reported coding, and that the recoding was driven by labeling and commercial considerations rather than by the medical adjudication process described in the protocol.
+
+I am willing to share documents through a secure channel. I would prefer initial contact be with FDA OSI or with qui tam counsel rather than with the company.

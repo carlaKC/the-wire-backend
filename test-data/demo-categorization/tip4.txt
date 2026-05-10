@@ -1,0 +1,21 @@
+TIP 4: Labor category mischarging on Army cost-plus cyber range task order
+CHANNEL: encrypted email
+RECEIVED: 03 May 2026
+
+This concerns Vermilion Defense Systems and a cost-plus-fixed-fee task order supporting cyber range operations at Aberdeen Proving Ground (W9113M-23-D-0041), issued under Vermilion's Army IDIQ vehicle. I am the project manager on the task order. I have been with Vermilion since 2022 and on this task order since its award in May 2023.
+
+The mischarging I am reporting is in the labor category structure, which I believe is the simplest and most cleanly documented form of direct labor fraud on a cost-reimbursable contract. The task order has eight approved labor categories, each with a negotiated fully-burdened hourly billing rate ranging from $112/hr (Engineer I) to $284/hr (Senior Cyber Architect IV). The categories have minimum education and experience qualifications written into the task order.
+
+What I have observed and can document is that approximately 60 percent of the work being billed under "Senior Systems Engineer III" ($218/hr) and "Senior Cyber Architect IV" ($284/hr) is actually being performed by employees who do not meet the contractual qualifications for those categories. In several cases the work is being performed by employees who were classified as "Engineer I" or "Engineer II" in our internal HR system at the time of the work.
+
+I prepared a side-by-side comparison covering Q3 2024 through Q1 2026. For each invoice I matched the timecards against the employees' contemporaneous personnel records. The pattern:
+
+- 14,600 hours billed at the SSE-III rate were performed by employees whose personnel record at the time showed Engineer I or Engineer II classification. At the rate differential between the categories, this represents approximately $1.41 million in over-billing.
+- 4,200 hours billed at the SCA-IV rate were performed by employees whose record showed Senior Engineer or below. Differential overbilling: approximately $620,000.
+- Total over-billing identified: approximately $2.03 million across the six quarters.
+
+The mechanism, as I understand it, is that our Program Director Ariel Kessenbaum directs the back-office to assign labor categories at invoicing based on "what the customer needs filled" rather than the actual qualifications of the engineer performing the hours. The task order's contracting officer is not informed of this practice.
+
+I raised this concern verbally to Kessenbaum on 17 January 2026 and was told that "the customer is happy with the deliverables and that's what matters." I raised it in writing to our Compliance Officer, Maren Vista, on 22 January and was told that the labor category review was "an internal HR matter."
+
+I have retained: the approved labor category descriptions from the task order, exports from our timekeeping system showing employee-to-charge-code mappings, copies of submitted invoices, and the personnel records (mine to access as PM) showing the classifications at time of performance. I am willing to provide everything to an investigator under appropriate confidentiality.

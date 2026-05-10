@@ -1,0 +1,26 @@
+TIP 5: Phantom travel and per-diem fraud at Vermilion Defense Systems
+CHANNEL: secure drop
+RECEIVED: 06 May 2026
+
+I work as a senior travel coordinator at Vermilion Defense Systems, supporting Vermilion's services-side sites in Florida and Virginia. I have been in this role since 2018. I support travel for roughly 350 program employees who routinely travel to government customer sites.
+
+I am reporting what I believe is a systematic pattern of fraudulent travel and per-diem claims that flow into our G&A and overhead pools and from there into the rates we bill the federal government on cost-reimbursable work. The pattern has three features.
+
+First, phantom travelers. Beginning in mid-2023, I started seeing travel authorizations and corresponding expense reports submitted under the names of employees who, on cross-check against badge access and HR rosters, were not actually traveling on the dates claimed. The pattern concentrates around three names — two of which I now believe are dormant employee accounts retained from 2021 and 2022 separations, and one of which is the legal name of an executive's adult child who is not a Vermilion employee at all.
+
+Second, duplicate claim submissions for the same trip. I have identified 37 trips between January 2024 and February 2026 where two distinct expense reports were filed against effectively the same itinerary — same origin, same destination, dates within one or two days of each other, both with hotel and per-diem claims. In 31 of the 37 cases, the two expense reports correspond to two different traveler names. In the remaining six the same traveler submitted twice.
+
+Third, weekend and personal travel coded as program work. I cross-referenced 240 expense reports against badge access records at the customer sites being claimed as the destination. In 89 cases, the traveler had no badge swipes at the destination customer site during the claimed travel window. The most common pattern is a Friday-departure / Monday-return trip claimed against a customer-site engagement, where the actual flight log shows the destination city had no relationship to the program of record.
+
+My estimated dollar exposure based on what I can directly tie to records I have:
+
+- Phantom travelers: approximately $214,000 across 2024 and 2025.
+- Duplicate claims: approximately $86,000 across the same period.
+- Personal-trip coding: approximately $312,000.
+- Total identified: approximately $612,000. I believe the actual figure across all programs and all years is materially larger.
+
+The dollar amount per incident is small enough that no individual transaction triggers our finance team's threshold-based review. The cumulative exposure across cost-reimbursable contracts is what I am asking someone to look at.
+
+I raised the duplicate-claim pattern to my supervisor, Inez Donato, in October 2024. She told me to "stop running unauthorized reports" and reminded me my role is to "facilitate travel, not audit it." I did not raise the personal-trip pattern internally because I did not believe it would be received any differently.
+
+I have retained the underlying expense report exports, the badge access reports, and the flight log records I cross-referenced. I will not identify myself except to a federal investigator under written protection.

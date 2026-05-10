@@ -1,0 +1,21 @@
+TIP 8: Stability test re-analysis on FDA-submitted ophthalmic generic
+CHANNEL: intake form
+RECEIVED: 29 April 2026
+
+I work as a QC analyst at Caldera Pharmaceuticals' generics manufacturing operation, with sites in Cleveland and Mumbai. I am based at the Cleveland site. I have been with Caldera since 2020.
+
+I am reporting practices in our QC stability program for product CP-OS-061, an ophthalmic preserved-solution generic for which Caldera filed an ANDA in March 2025 and received tentative approval in February 2026. The product is currently anticipating final approval and launch.
+
+The issue concerns the 12-month stability timepoint testing. Stability protocols require that finished product samples be stored under defined conditions and tested at protocol-defined timepoints (3, 6, 9, 12, 18, 24 months) against pre-defined acceptance criteria for assay, related substances (impurities), pH, preservative content, and visual appearance. The data are submitted to FDA in support of the proposed shelf life and storage conditions.
+
+For CP-OS-061, the 12-month long-term timepoint samples were tested in the second week of November 2025. The original test results showed two related substances exceeding the qualified specification — Impurity-B at 0.18 percent against a 0.15 percent specification, and Impurity-D at 0.31 percent against a 0.25 percent specification. The original LIMS records show these out-of-specification (OOS) results were entered on 14 November 2025 by analyst K. Senthilnathan.
+
+What happened next is outside the OOS investigation framework that the protocol requires. Rather than initiate a Phase I lab investigation under our SOP-QC-101, our QC Manager Jeevan Aravind directed that the samples be re-tested using HPLC method M-OS-061-B, an alternate method that had been validated as a qualifier rather than a release method. The alternate method is less sensitive in the 0.1-0.3 percent impurity range. The re-test under M-061-B returned results within specification (Impurity-B at 0.12 percent, Impurity-D at 0.22 percent).
+
+The official record submitted to FDA shows only the M-061-B results, marked as the result of record. The original M-061-A results are present in the LIMS audit trail but were not included in the stability annual update submitted to the agency in February 2026.
+
+I have screenshots of the LIMS audit trail showing both the original entry and the subsequent record-of-record reassignment, the chromatograms from both test methods, the M-061-B method validation report (which characterizes it as a qualifier method, not a release-equivalent method), and Aravind's email of 17 November 2025 instructing the re-test.
+
+I have not raised this internally beyond a single conversation with my immediate supervisor in November 2025, who told me the matter had been "handled by QA management." Caldera's senior QA leadership reports up through the same chain as Aravind, and I do not have confidence that an internal escalation will be received differently than my initial conversation.
+
+I would prefer initial contact be with FDA OSI rather than the company. I am willing to provide all the documentation I have retained.

@@ -1,0 +1,21 @@
+TIP 9: Bioequivalence study site data manipulation at Indian study site
+CHANNEL: encrypted email
+RECEIVED: 04 May 2026
+
+I am a clinical research associate at Ardent Clinical Research, a contract research organization headquartered in New Jersey with global monitoring operations. I am writing about a bioequivalence study sponsored by Caldera Pharmaceuticals' generics division for an extended-release antihypertensive product the sponsor intends to file as an ANDA.
+
+The study (Protocol BE-CP-2024-09) is a single-dose, two-period, two-treatment crossover bioequivalence study comparing Caldera's test formulation to the reference listed drug. The study was conducted at a single clinical pharmacology site, Bharadwaj Clinical Research Centre in Pune, between June and September 2025. I have monitored studies at Bharadwaj on three prior occasions across 2022 through 2024.
+
+What I observed during my on-site monitoring visit in October 2025 raised concerns that I am reporting now because I do not believe my CRO management has acted on what I escalated internally.
+
+The first concern is the bioanalytical concentration data. The plasma concentration-time curves from the test treatment, when plotted in aggregate, show an unusually clean adherence to the modeled dose-response curve, with within-subject variability lower than what I have observed in any previous bioequivalence study at this or any other site. The within-subject coefficient of variation for AUC was reported at 4.8 percent. Typical bioequivalence studies for extended-release products show within-subject CV in the 12 to 22 percent range.
+
+The second concern is the eDiary timestamp pattern. Subjects in the study were required to log meal completion, water intake, and ambulation events in an eDiary application during the in-clinic confinement periods. On review of the eDiary export, I identified that across the 36 subjects, on five separate occasions during Period 1 confinement, 14 to 19 subjects' eDiaries logged the same event type within a 90-second window. The clustering pattern is consistent with the diaries being completed by a single staff member rather than by individual subjects.
+
+The third concern is the chain-of-custody on the bioanalytical samples. The shipment manifest shows the samples leaving Bharadwaj on 22 September 2025 in a temperature-controlled shipper. The sponsor's bioanalytical lab, Coastal Bioanalytics in Hyderabad, logged receipt on 23 September. The temperature recorder file pulled from the shipper, however, shows a 41-minute period during transit when the recorder was not active. The site coordinator, Dr. R. Vasudev, told me on the audit visit that the recorder had been "briefly turned off for battery management."
+
+I escalated all three issues to my line manager, Director of Clinical Operations Mira Halton, in a 14 October 2025 written report and again verbally on 28 October. I was told the issues were "noted" and that the sponsor would be informed. The study is now being prepared for ANDA submission. To my knowledge no formal data integrity investigation has been opened.
+
+I have retained: the bioanalytical data exports, the eDiary timestamp file, the temperature recorder export, my monitoring report, my email correspondence with Halton, and the sponsor's response to my queries.
+
+I am at the mid-career level professionally and would prefer not to be identified except to FDA OSI investigators directly.

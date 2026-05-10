@@ -1,0 +1,20 @@
+TIP 2: Unallowable costs billed through indirect pool on Navy maintenance contract
+CHANNEL: secure drop
+RECEIVED: 02 May 2026
+
+I am a senior cost accountant at Vermilion Defense Systems' Norfolk facility, which holds the cost-reimbursable maintenance and overhaul contract for two squadrons of Aegis destroyers, contract N00024-22-C-2188. I have worked at Vermilion since 2017 and in cost accounting since 2019.
+
+What I am reporting is the routine treatment of expressly unallowable costs as allowable indirect expenses, which are then flowed through to the Navy via our negotiated indirect rates. Under FAR 31.205 a number of cost categories are unallowable on cost-reimbursement government work — the most relevant ones here are entertainment, lobbying, golf and country club memberships, executive air travel beyond the cost of commercial coach, and alcohol.
+
+Beginning in fiscal year 2023 I started seeing expense reports run through the "Program Management — General" indirect cost pool that on review were clearly unallowable. Examples I can document:
+
+- Two memberships at the Currituck Yacht Club, totaling $48,400 across 2023 and 2024, coded as "client relationship management."
+- Twenty-three trips on a chartered Gulfstream operated by an entity called Bayfront Aviation, totaling roughly $612,000 across 2023 through Q1 2025, coded as "executive transportation - mission essential." The flight logs show several of these trips originated and terminated in non-program locations, including Aspen, Cabo San Lucas, and Hilton Head.
+- Approximately $189,000 in 2024 and $94,000 through Q1 2025 in payments to a firm called Arden Strategies, which our public lobbying disclosures identify as a federal lobbying firm. The invoices were coded as "policy research and analysis."
+- Roughly $73,000 in 2024 in event-bar charges from corporate dinners, coded as "training and meeting expenses."
+
+The total of items I have personally identified as unallowable but billed allowable through the indirect pool is approximately $2.3 million across fiscal 2023 through Q1 fiscal 2025. The Aegis maintenance contract is the largest single absorber of indirect costs at our site, so the majority of this flowed to the Navy.
+
+I raised this in writing to Vermilion's Director of Government Compliance, Wendell Truax, in two memoranda dated 11 September 2024 and 03 February 2025. I received an acknowledgment to the first and no response to the second. After the second memo I was removed from the indirect rate review committee and reassigned to a non-program accounting role.
+
+I have retained the original GL extracts, the expense reports with imaged receipts, the T&E approval workflow records, and copies of both internal memoranda. I am willing to identify myself to a DCAA investigator under appropriate protections, but I would prefer initial contact be made by an attorney rather than by a journalist.

@@ -1,0 +1,19 @@
+TIP 7: Toxicology data exclusion before IND submission at Caldera Pharmaceuticals
+CHANNEL: encrypted email
+RECEIVED: 01 May 2026
+
+I am a research scientist in nonclinical pharmacology at Caldera Pharmaceuticals' Cambridge research site, working in the small molecule pipeline focused on inflammatory disease. I have been at Caldera since 2022. I am writing about how data from our 13-week rat tox study were handled in advance of the IND submission for our lead inflammation program, CAL-2104, an oral JAK1-selective inhibitor for moderate-to-severe ulcerative colitis.
+
+The pre-IND meeting with FDA was held in November 2025. The 13-week rat tox study (Study Number TOX-2104-013) was the pivotal study supporting the proposed clinical starting dose. The study ran four dose groups: vehicle, 3 mg/kg/day, 10 mg/kg/day, and 30 mg/kg/day. The clinical starting dose was set at a no-observed-adverse-effect-level (NOAEL) corresponding to the 10 mg/kg/day group.
+
+What I observed and can document is that the original tox study report identified findings of hepatocellular hypertrophy and elevated ALT in the 10 mg/kg/day group at the week-13 sacrifice, in 7 of 12 animals in that cohort. These findings, if reported as treatment-related, would have moved the NOAEL down to the 3 mg/kg/day group and reduced the proposed clinical starting dose by approximately one-third.
+
+Beginning in mid-September 2025, the program team — specifically the SVP of Development, Halford Brent, and our CMO, Dr. Marisol Yance — directed the toxicology lead to reclassify the 10 mg/kg findings as "background" rather than treatment-related. The rationale documented in the revised study report cited "high inter-animal variability in the strain" and pointed to two of the seven animals as having had pre-study elevated ALT values. The other five animals in the affected group had within-range pre-study values.
+
+I attended a 24 September 2025 program meeting where Dr. Yance directly told the toxicology lead, Dr. Pranav Iyer, that the 10 mg group findings would be characterized in the briefing book as "non-adverse, monitored." Dr. Iyer pushed back on the call and was overruled. The IND-enabling briefing book sent to FDA on 02 October 2025 did not include the original 7-of-12 finding; it described the hepatic findings as "minimal, non-progressive hypertrophy without ALT elevation, considered non-adverse."
+
+I retained: a copy of the original toxicology study report dated 18 August 2025, the revised report dated 25 September 2025, the briefing book draft circulated 30 September 2025, and meeting notes from the 24 September program meeting. I do not have audio of the meeting; my notes are contemporaneous.
+
+I am asking that someone independent review whether the briefing book accurately characterized the 13-week rat findings. I am not, on my own, able to evaluate clinical risk at the proposed starting dose; what I can evaluate is whether the data were reported faithfully.
+
+I am willing to share documents through a secure channel. I am still employed at Caldera and would prefer to remain anonymous in any initial reporting.

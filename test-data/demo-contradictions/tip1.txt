@@ -1,0 +1,22 @@
+TIP 1: Auto loan APR bait-and-switch at Pier 7 Financial
+CHANNEL: encrypted email
+RECEIVED: 02 May 2026
+
+I am writing about consumer lending practices at Pier 7 Financial, a regional consumer bank with about $18 billion in assets, headquartered in Phoenix. I work in the bank's internal compliance group as a senior analyst on the consumer lending side. I joined the bank in March 2023 and have been on the consumer compliance team for the entire period since.
+
+The issue I am reporting is a systematic bait-and-switch on auto loan APRs in the bank's indirect lending channel. Customers receive a rate quote at the dealership based on a Pier 7 rate sheet. After the loan documents are signed and the customer drives off, a portion of these loans are re-priced upward at booking on the bank's side, with the closing documents reflecting the higher rate. The customer's signature is on a document that does not show the same rate that was quoted.
+
+The mechanism, as I have been able to reconstruct it, was implemented by our former Director of Consumer Credit, Lyle Mendin. I personally attended the rate-setting meeting in November 2022 where Mendin presented the "rate floor adjustment" framework to the consumer credit committee, including how the system would re-price loans booked from a defined list of dealer partners. That framework went into production in early 2023 and has been running since.
+
+Across 28 months I have identified 4,200 affected loans averaging $450 in additional interest charges per loan over the life of the loan, totaling approximately $2.1 million in customer overcharges. The bank is actively negotiating with two state attorneys general and has set aside approximately $2.7 million in reserves for the matter, which the consumer credit team has internally referred to as "the Mendin issue."
+
+The mechanism is technically defensible to a casual auditor because the closed loan document does include the higher rate; the customer's signature is treated as legal consent. What the documentation does not show is the rate the customer was originally quoted at the dealership, which a parallel internal system records but which is not retained in the customer file.
+
+I have:
+
+- Copies of the November 2022 rate framework deck.
+- Quarterly compliance reports for 2024 and 2025 showing the loan flagging logic.
+- A spreadsheet I assembled cross-referencing original dealer-quoted rates against booked rates for 4,200 loans across 2024 and 2025.
+- Email correspondence with our consumer compliance lead in early 2025 in which I raised this and was told the practice was "within the dealer disclosure framework."
+
+I would prefer initial contact be with the CFPB or the relevant state attorney general rather than the bank. I am still employed at Pier 7 and am submitting this anonymously through a personal channel.

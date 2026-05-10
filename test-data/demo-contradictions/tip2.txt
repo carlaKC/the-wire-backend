@@ -1,0 +1,17 @@
+TIP 2: Customer data exposure through misconfigured cloud storage at Cordwain Logistics
+CHANNEL: secure drop
+RECEIVED: 06 May 2026
+
+I work as a senior network engineer at Cordwain Logistics, a third-party logistics provider with about 9,000 employees and customers across the retail, healthcare, and consumer electronics sectors. I have been at Cordwain since 2021. I am reporting what I believe is an undisclosed customer data exposure event that the company has known about for at least seven months and has not notified affected parties about.
+
+The exposure began in roughly mid-2024 when our cloud platform team migrated a portion of the customer-portal infrastructure to AWS S3-backed storage. One of the buckets — used for staging customer-uploaded shipment manifests, including manifests that contain product SKUs, recipient PHI for our healthcare logistics customers, and pricing terms for our retail customers — was deployed with public-read ACLs.
+
+The bucket, named cw-cust-portal-staging-prd, was publicly accessible from approximately June 2024 through October 2025. During that 16-month window the bucket received approximately 14 terabytes of customer-uploaded files. Server access logs, which I was able to review in my role, show that the bucket was indexed by at least three known security-research crawlers in early 2025 and was accessed by at least 47 distinct IP addresses outside our corporate range across the period. The total number of files exposed was approximately 1.2 million, of which my sampling estimates that about 8 percent contained PHI subject to HIPAA notification requirements.
+
+The exposure was identified by an external security researcher in October 2025 and reported to our CISO Rohan Bakshi via the bug bounty program. The bucket ACL was corrected within four hours of the report. What has not happened since then is customer notification.
+
+I attended an internal review on 14 October 2025 chaired by our General Counsel Helena Aldemar, with Bakshi, our CFO, and the head of our healthcare logistics division. The discussion focused on whether the exposure constituted a "reportable breach" under the contractual terms with our healthcare customers and under HIPAA. The position taken by counsel was that, in the absence of evidence of "specific exfiltration of PHI by a known threat actor," the bank — sorry, the company — would not provide proactive notification.
+
+I had read access during this period to the CFO's confidential exposure analysis prepared for the board, which estimated remediation and litigation reserves of $12 to $18 million in a notification scenario and $0 in a no-notification scenario. The choice not to notify is documented in writing in the 22 October 2025 board update package, which CISO Rohan Bashki signed alongside our General Counsel.
+
+I have retained: the bucket configuration history, the access logs, my notes from the 14 October review, and a copy of the 22 October board package as Bakshi distributed it. I have not yet notified any external authority. My concern is for the patients whose information was exposed and who have not been told.

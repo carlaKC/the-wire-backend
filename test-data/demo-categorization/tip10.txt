@@ -1,0 +1,23 @@
+TIP 10: Adverse event under-reporting at Caldera Pharmaceuticals
+CHANNEL: secure drop
+RECEIVED: 05 May 2026
+
+I am a pharmacovigilance specialist at Caldera Pharmaceuticals, which markets an approved oncology biologic under the brand name SAVENTRA (rinatumab) for adult patients with relapsed B-cell non-Hodgkin lymphoma. I have been at Caldera since 2021 and on the SAVENTRA safety team since the drug's approval in late 2022.
+
+I am reporting a pattern of adverse-event under-reporting in the post-marketing safety surveillance for SAVENTRA. The pattern is straightforward: a category of patient-reported adverse experiences is being routed away from formal safety case processing, which means those experiences are not being included in periodic safety updates submitted to FDA or in the global safety database used to support label updates.
+
+SAVENTRA is distributed through a single specialty pharmacy network, and patients who experience side effects often call into Caldera's patient assistance program (PAP) before they tell their oncologist. The PAP call center, which sits inside Caldera's commercial organization, is supposed to triage these calls under a documented procedure: any caller describing a medical experience suggestive of an adverse event is supposed to be warm-transferred to pharmacovigilance and a case opened.
+
+In approximately Q3 2024, the PAP call routing rules were modified to add a "patient inquiry — symptom resolution" disposition. Calls dispositioned this way are not transferred to PV. They are routed back to the call center supervisor, who provides general counseling and closes the call. There is no PV record created. The audit trail of the call is retained in the commercial CRM, not in the safety database.
+
+I ran a query of PAP call records against PV cases for the period October 2024 through February 2026. In that window:
+
+- 14,820 total PAP calls were received from SAVENTRA patients.
+- 3,140 of those calls were dispositioned as "patient inquiry — symptom resolution."
+- Of those 3,140, my keyword review of the call notes identified 612 calls that, in my judgment, described medical experiences that should have been opened as PV cases. The most common patterns were neutropenic fever (an important known risk for SAVENTRA), severe infusion-related reactions occurring at home post-infusion, and one cluster of approximately 40 cases describing acute neurologic symptoms that were not previously characterized in the drug's label.
+
+The neurologic cluster is what concerns me most clinically. The pattern across those 40 calls — which I could compile with the descriptions in the call notes — is broadly similar in onset timing and described symptomatology. None of these calls resulted in a PV case being opened, and none are reflected in the PSUR submitted to FDA in March 2026.
+
+I have raised this internally twice. I sent a written summary to our Head of Safety, Dr. Veronique Blas, in January 2026. I was told the call routing rules were "operationally appropriate" and that the responsibility for PV reporting rested with healthcare providers, not with PAP call dispositions. I escalated to our Compliance function in February. The response I received was that the matter had been reviewed and was closed.
+
+I have retained: the call routing rules documentation, the CRM call records (de-identified pulls within my legitimate access), the PSUR submitted in March 2026, and the comparison spreadsheet I assembled. I am willing to be identified to FDA but not to the company until I have a formal protective order.

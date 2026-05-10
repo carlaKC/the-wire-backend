@@ -1,0 +1,23 @@
+TIP 1: Inflated speaker fees flowing to interventional cardiologists at major heart center
+CHANNEL: encrypted email
+RECEIVED: 28 April 2026
+
+I am writing about Lattimer Medical, a Minneapolis-based medical device manufacturer that markets a portfolio of drug-eluting coronary stents. I work in Lattimer's compliance organization as an associate director with primary responsibility for HCP (healthcare professional) payments review. I have been at Lattimer since 2022.
+
+The issue I am reporting is a pattern of speaker bureau and consulting payments to a defined group of interventional cardiologists at one institution that, in my professional judgment, do not correspond to actual speaker or consulting work and instead function as compensation for institutional purchasing preference.
+
+The institution is Mercer Heart Institute, an academic cardiac center affiliated with a large midwestern medical school. Mercer's cath lab performs approximately 4,200 percutaneous coronary intervention (PCI) procedures annually and is among the top fifty PCI volume centers in the country. Lattimer's stent portfolio holds approximately 78 percent of Mercer's stent volume — well above our 31 percent national share.
+
+Across calendar years 2023 through 2025, Lattimer paid eleven physicians at Mercer a combined $4.7 million in HCP payments — speaker fees, consulting fees, and research grants. The five highest-paid physicians received between $312,000 and $548,000 each in 2025 alone. All eleven are interventional cardiologists with personal procedure volume that drives stent selection in their respective cath labs.
+
+What concerns me on review is what these payments correspond to.
+
+First, the speaker fees: my audit of speaker bureau records for 2024 identified that of the 187 paid "speaking events" attributed to the Mercer-affiliated speakers, 143 were closed-list dinners at high-end restaurants in the Mercer metro area, with attendance lists that consisted primarily of other Mercer interventional cardiologists. The "training content" delivered at these events, where it was documented at all, is described in vague clinical-update language. There are no slide decks retained for 91 of the 143.
+
+Second, the consulting fees: Mercer's Dr. R. Vehring is paid $96,000 per quarter on a "scientific advisor" agreement. Across 2024 and 2025 I can find approximately fourteen hours of documented Vehring consulting deliverables — a few email replies on protocol design and one half-day advisory board appearance.
+
+Third, the research grants: three "investigator-initiated" research grants to Mercer-led studies of Lattimer products in 2023-2024, totaling $1.8 million, do not have corresponding study enrollment records that match the budget burn. Two of the three studies have not enrolled a single subject as of my last review.
+
+I have raised these patterns with my supervisor and with our Chief Compliance Officer. The response in both cases has been that the payments are within "fair market value" benchmarks and that audit findings should focus on individual compliance gaps rather than aggregate purchasing pattern correlation.
+
+I have retained the relevant payment records, the speaker bureau attendance and content logs, the consulting agreement deliverables, and the IIS budget-versus-enrollment data.

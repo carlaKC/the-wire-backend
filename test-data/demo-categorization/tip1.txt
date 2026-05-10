@@ -1,0 +1,17 @@
+TIP 1: Cost-plus / fixed-price labor mischarging at Vermilion Defense
+CHANNEL: encrypted email
+RECEIVED: 28 April 2026
+
+I am writing about Vermilion Defense Systems, a tier-one prime contractor based in Tucson. I work as a Subcontracts Manager II on the Hawkeye-X airborne ISR program, an Air Force cost-plus-fixed-fee program that has been the prime focus of the Tucson site since 2022. I have been with Vermilion since 2020 and on Hawkeye-X since the program transitioned out of risk-reduction in late 2023.
+
+The issue I am reporting is systematic mischarging of labor between two co-located programs. Hawkeye-X runs cost-plus. Vermilion has a separate Air Force program out of the same building, designated Granite IV, that is firm-fixed-price. The two programs share approximately 30 percent of their engineering staff and the entire RF integration lab.
+
+Beginning in March 2024, labor hours that I can document as having been worked on Granite IV tasks began appearing in the Hawkeye-X cost reports under indirect engineering categories. The clearest evidence is the engineering labor burn on Hawkeye-X, which jumped 17.8 percent month-over-month in March 2024 with no scope change, no staffing change on the Hawkeye-X charge numbers, and no corresponding increase in deliverable output.
+
+I have copies of the monthly indirect rate detail reports for January 2024 through March 2025, the underlying subcontractor invoices showing original task allocation, and the revised allocation reports that follow what I believe is an internal reclassification process that did not go through documented program-control review. The reclassification entries are made under a single user account, "wcr-batch01," which does not correspond to a named program-control analyst on either program.
+
+My estimate, based on the records I have, is that Vermilion has overbilled the Air Force by approximately $4.6 million on Hawkeye-X across calendar 2024 and Q1 2025. I cannot estimate Q2 2025 directly because I rotated to a new responsibility on 14 April 2025 and lost regular access to the Hawkeye-X cost reports, but my former colleague who is still on the program told me informally in November 2025 that "the pattern hasn't changed."
+
+I have already retained personal counsel and have begun the process of preparing a formal disclosure under the False Claims Act. I am submitting this through your channel because I want the underlying pattern to be on a journalistic record as well, in case the qui tam process is slow or my identity is disclosed before any sealed complaint can be unsealed.
+
+I am willing to share the indirect rate detail reports, the subcontractor invoices, the reclassification audit trail, and a written timeline. I would prefer not to be contacted at any Vermilion email address or through any Vermilion-affiliated communication channel.

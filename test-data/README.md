@@ -31,6 +31,30 @@ and target heuristic ratings.
 - `batch-doc-heuristics`: eight single-document fixtures targeting high/low
   ratings for the four per-document heuristics.
 
+## Pitch demo cases
+
+These directories are for live pitch demos rather than regression. Each
+includes individual `tipN.txt` files (for drag-and-drop upload through the
+front end), an assembled `case-test.json`, an `EXPECTED.md` describing what
+the system should produce, and a `PITCH.md` with the on-stage narration.
+
+- `demo-categorization`: ten tips splitting cleanly into two topics
+  (defense-contractor financial misconduct, pharmaceutical data integrity).
+  Pitch beat: read at scale and group correctly without human guidance.
+- `demo-contradictions`: three tips. Two have seeded internal inconsistencies
+  (temporal+numerical, role/access+identity drift). One is a clean control
+  with apparent inconsistencies that resolve on careful reading. Pitch beat:
+  the system reads, it doesn't just pattern-match.
+- `demo-corroboration`: three independent vantage points on the same medical
+  device kickback scheme (manufacturer compliance officer, competitor sales
+  rep, teaching-hospital fellow). Pitch beat: independent corroboration is
+  what turns a tip into a story.
+- `demo-evidence-quality`: two tips about the same allegation against the
+  same target. One is a first-person source with specific transactions,
+  dates, and folio numbers; the other is rumor-shaped with no documents.
+  Pitch beat: not all tips are equally reportable, and the system grades
+  evidence accordingly.
+
 To rebuild a payload after editing tips:
 
 ```sh

@@ -1,0 +1,25 @@
+TIP 3: Subcontractor markup pass-through overcharging on Air Force ground systems contract
+CHANNEL: encrypted email
+RECEIVED: 30 April 2026
+
+I am a senior subcontract administrator at Vermilion Defense Systems' Colorado Springs site. I have worked at Vermilion since 2020. I am writing about a sustained pattern of overcharging the federal government on a cost-reimbursable Air Force ground systems contract through inflated subcontractor pass-through pricing.
+
+The contract is FA8730-22-C-0019, a cost-plus-incentive-fee program for ground station hardware and integration in support of an unclassified Space Force mission. The contract has a substantial subcontracted content — approximately 42 percent of the total contract value passes through to about a dozen Tier-2 suppliers. Subcontractor costs are billed to the government on a pass-through basis, plus Vermilion's negotiated material handling rate of 6.8 percent.
+
+What I have observed and can document is that beginning in approximately Q2 2023, the dollar amount Vermilion invoices to the government for subcontractor work has not matched the dollar amount Vermilion actually pays the subcontractors. Specifically, on five subcontracts that I have administrative responsibility for, the program is billing the government against subcontractor list prices while paying the subcontractor a negotiated discounted price under separately executed side-letter agreements that are not part of the prime-flowed subcontract.
+
+The mechanism: the formal subcontract document references a "list price" tied to the subcontractor's standard rate sheet. The side letter, executed separately, applies a 14 to 22 percent discount in exchange for volume commitments and accelerated payment terms. The program bills the government using the subcontract list price, not the actual paid price.
+
+For the five subcontracts I have visibility into, the pricing differential adds up as follows across calendar 2023 through Q1 2026:
+
+- Subcontractor A (RF subassemblies): list-price billing $14.2M, actual paid $11.6M. Differential overbilled to government: $2.6M.
+- Subcontractor B (precision machined parts): $8.4M billed, $7.1M paid. Differential: $1.3M.
+- Subcontractor C (cable harnesses): $6.8M billed, $5.4M paid. Differential: $1.4M.
+- Subcontractor D (test equipment): $4.1M billed, $3.6M paid. Differential: $0.5M.
+- Subcontractor E (custom enclosures): $3.2M billed, $2.6M paid. Differential: $0.6M.
+
+The total differential across just these five subcontracts is approximately $6.4M billed to the government against costs that Vermilion never incurred. This is the classic profile of a False Claims Act violation: invoices submitted at a price the contractor knows is higher than the price actually paid.
+
+I raised the pricing differential in writing to my Director of Subcontracts, Ronan Westerly, in October 2024 and again in March 2025. The response in both cases was that the side-letter discounts were "commercial terms separate from the government cost record." I do not believe DCAA would accept that characterization on a cost-reimbursable contract.
+
+I have retained: the formal subcontracts, the side-letter agreements, the supplier invoices showing actual payment amounts, and the customer invoices submitted to the government. I am willing to share these with DCAA or with a federal qui tam counsel.

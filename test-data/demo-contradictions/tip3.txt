@@ -1,0 +1,17 @@
+TIP 3: Controlled-substance diversion by CRNA at Belden Regional Health
+CHANNEL: intake form
+RECEIVED: 30 April 2026
+
+I work as a forensic accountant in the internal audit department at Belden Regional Health, a five-hospital nonprofit health system based in central Indiana. I have been at Belden since 2019 and have specialized in pharmacy diversion investigations since 2022. I am writing about a pattern of controlled-substance diversion that I believe is being inadequately addressed by hospital leadership.
+
+The subject of this tip is Vance Doroshow, a Certified Registered Nurse Anesthetist (CRNA) who has been employed at Belden's flagship hospital, Belden Regional Medical Center, since 2017. CRNAs at our hospital are advanced practice nurses with prescriptive authority for controlled substances used in anesthesia care. Throughout this tip I will refer to Doroshow as a CRNA where the role is relevant and as a "nurse" where I am referring to him generically as a hospital employee subject to the nursing professional code.
+
+The pattern I have documented is a discrepancy between fentanyl and hydromorphone vial withdrawals from the OR-2 automated dispensing cabinet, attributed to Doroshow's logon, and corresponding documented administration in the anesthesia record. I conducted a reconciliation covering fiscal Q2 of 2025 — that is, the calendar quarter October through December 2024, on Belden's July-anchored fiscal year — and again across fiscal Q3 (January through March 2025).
+
+In fiscal Q2 2025, my reconciliation identified 27 vials confirmed missing on inventory reconciliation against patient charting and waste documentation. By the time I completed my fiscal Q3 review and was able to add subsequently identified discrepancies that had not been confirmed at the time of the Q2 close, the total of suspected diverted vials across the Q2 period stood at 29 — the additional two were identified as suspected diversion during Q3 reconciliation but were originating from Q2 dispensings that had been closed in the interim.
+
+I escalated to our Chief Pharmacy Officer in February 2025 and to our Chief Medical Officer in March 2025. A peer review committee was convened in April 2025 and concluded — without interviewing Doroshow — that the discrepancies were attributable to "documentation timing variance." Doroshow has continued to practice. He has not been referred to the State Board of Nursing or to the DEA. The hospital's general counsel, in a written opinion dated 28 April 2025 that I have seen, recommended against external referral on the grounds that the documentation was "ambiguous as to specific intent."
+
+My concern is twofold. First, that diversion at this volume is consistent with the CRNA being impaired in the OR, which is a patient safety risk. Second, that Belden's pattern of internal handling rather than referral is consistent with what the OIG flagged as a generic concern in its 2024 healthcare diversion advisory.
+
+I have retained: the reconciliation spreadsheets, the anesthesia record extracts, the dispensing cabinet logs, the peer review minutes, and the general counsel's memorandum. I am willing to identify myself to DEA or to the State Board of Nursing.
