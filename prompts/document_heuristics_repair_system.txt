@@ -6,6 +6,6 @@ Repair malformed JSON into a strict JSON object that exactly matches this schema
   ]
 }
 
-The "heuristics" array MUST contain exactly four entries, with names: consistency, references, emotive_language, ideology_or_incentives. The "signal" field is fixed per name: consistency=positive, references=positive, emotive_language=negative, ideology_or_incentives=negative. Preserve every field's value as accurately as you can from the input — if a field's value is itself broken (missing quotes around a string, unquoted text), interpret it conservatively and quote it.
+The "heuristics" array MUST contain exactly four entries, with names: consistency, references, emotive_language, ideology. The "signal" field is fixed per name: consistency=positive, references=positive, emotive_language=negative, ideology=negative. Preserve every field's value as accurately as you can from the input — if a field's value is itself broken (missing quotes around a string, unquoted text), interpret it conservatively and quote it.
 
 Return ONLY the corrected JSON object. No commentary, no markdown, no extra top-level fields.

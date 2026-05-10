@@ -190,7 +190,7 @@ func TestMapleClassifierClassifyDocumentReturnsParsedHeuristics(t *testing.T) {
 			{"name":"consistency","signal":"positive","score":"high","explanation":"coherent timeline"},
 			{"name":"references","signal":"positive","score":"medium","explanation":"some dates and a PO"},
 			{"name":"emotive_language","signal":"negative","score":"low","explanation":"factual tone"},
-			{"name":"ideology_or_incentives","signal":"negative","score":"low","explanation":"no agenda"}
+			{"name":"ideology","signal":"negative","score":"low","explanation":"no agenda"}
 		]}`},
 	}
 	classifier := mapleClassifier{model: "doc-model", client: completer}
@@ -238,13 +238,13 @@ func TestMapleClassifierClassifyDocumentReturnsParsedHeuristics(t *testing.T) {
 		"consistency":            "high",
 		"references":             "medium",
 		"emotive_language":       "low",
-		"ideology_or_incentives": "low",
+		"ideology": "low",
 	}
 	wantSignal := map[string]string{
 		"consistency":            "positive",
 		"references":             "positive",
 		"emotive_language":       "negative",
-		"ideology_or_incentives": "negative",
+		"ideology": "negative",
 	}
 	for _, h := range hs {
 		if h.Rating != wantRating[h.Name] {
@@ -277,7 +277,7 @@ func TestMapleClassifierClassifyDocumentRepairsInvalidJSON(t *testing.T) {
 				{"name":"consistency","signal":"positive","score":"medium","explanation":"ok"},
 				{"name":"references","signal":"positive","score":"low","explanation":"no verifiable references"},
 				{"name":"emotive_language","signal":"negative","score":"low","explanation":"calm"},
-				{"name":"ideology_or_incentives","signal":"negative","score":"low","explanation":"none"}
+				{"name":"ideology","signal":"negative","score":"low","explanation":"none"}
 			]}`,
 		},
 	}
@@ -303,7 +303,7 @@ func TestMapleClassifierClassifyDocumentRepairsInvalidJSON(t *testing.T) {
 		t.Fatal("repair request had no messages")
 	}
 	system := repair.Messages[0].Content
-	for _, want := range []string{"consistency", "references", "emotive_language", "ideology_or_incentives", `"signal"`, `"score"`, `"explanation"`} {
+	for _, want := range []string{"consistency", "references", "emotive_language", "ideology", `"signal"`, `"score"`, `"explanation"`} {
 		if !strings.Contains(system, want) {
 			t.Errorf("repair system prompt missing %q (schema must be pinned). got: %s", want, system)
 		}
@@ -481,7 +481,7 @@ func TestRenderDocumentHeuristicsUserSubstitutes(t *testing.T) {
 	if !strings.Contains(user, "HELLO WORLD") {
 		t.Error("rendered user prompt missing the substituted document text")
 	}
-	for _, h := range []string{"consistency", "references", "emotive_language", "ideology_or_incentives"} {
+	for _, h := range []string{"consistency", "references", "emotive_language", "ideology"} {
 		if !strings.Contains(documentHeuristicsSystemPrompt, h) {
 			t.Errorf("system prompt missing heuristic name %q", h)
 		}

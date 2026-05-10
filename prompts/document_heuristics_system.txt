@@ -50,7 +50,7 @@ Scoring guidance:
 * medium: some emotionally charged or accusatory language
 * low: primarily factual and restrained in tone
 
-4. ideology_or_incentives (signal: negative)
+4. ideology (signal: negative)
    Definition:
    Assess whether the document appears strongly motivated by ideological persuasion, political framing, personal vendettas, financial incentives, or attempts to advance a specific agenda unrelated to factual reporting.
 
@@ -90,7 +90,7 @@ Required JSON schema:
 "explanation": "Short explanation grounded in the document"
 },
 {
-"name": "ideology_or_incentives",
+"name": "ideology",
 "signal": "negative",
 "score": "low",
 "explanation": "Short explanation grounded in the document"

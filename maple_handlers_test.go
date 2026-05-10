@@ -149,7 +149,7 @@ func TestProcessCaseAttachesPerDocumentHeuristics(t *testing.T) {
 		{Name: "consistency", Rating: "high", Description: "coherent timeline"},
 		{Name: "references", Rating: "medium", Description: "PO referenced"},
 		{Name: "emotive_language", Rating: "low", Description: "factual tone"},
-		{Name: "ideology_or_incentives", Rating: "low", Description: "no agenda"},
+		{Name: "ideology", Rating: "low", Description: "no agenda"},
 	}
 	srv := newMapleServer(classifier)
 
@@ -165,7 +165,7 @@ func TestProcessCaseAttachesPerDocumentHeuristics(t *testing.T) {
 		t.Fatalf("document count = %d, want 1", got)
 	}
 	got := docs.Documents[0].Heuristics
-	wantPromptNames := []string{"consistency", "references", "emotive_language", "ideology_or_incentives"}
+	wantPromptNames := []string{"consistency", "references", "emotive_language", "ideology"}
 	for _, name := range wantPromptNames {
 		if !containsHeuristicNamed(got, name) {
 			t.Errorf("document heuristics missing %q (from ClassifyDocument). got: %v", name, heuristicNames(got))
@@ -210,7 +210,7 @@ func TestProcessCaseStartsGroupScanOnlyAfterCaseAndDocumentStagesComplete(t *tes
 	classifier.documentCalls = make(chan classifiedInput, 2)
 	classifier.documentReport = []heuristic{
 		{Name: "emotive_language", Signal: "negative", Rating: "low"},
-		{Name: "ideology_or_incentives", Signal: "negative", Rating: "low"},
+		{Name: "ideology", Signal: "negative", Rating: "low"},
 	}
 	classifier.groupReport = []heuristic{{Name: "corroboration", Signal: "positive", Rating: "medium"}}
 	classifier.groupCalls = make(chan groupCall, 1)
@@ -261,7 +261,7 @@ func TestGetTopicDocumentsReturnsOnlyDocumentsForThatTopic(t *testing.T) {
 		{Name: "consistency", Signal: "positive", Rating: "high", Description: "coherent"},
 		{Name: "references", Signal: "positive", Rating: "medium", Description: "PO referenced"},
 		{Name: "emotive_language", Signal: "negative", Rating: "low", Description: "factual"},
-		{Name: "ideology_or_incentives", Signal: "negative", Rating: "low", Description: "no agenda"},
+		{Name: "ideology", Signal: "negative", Rating: "low", Description: "no agenda"},
 	}
 	srv := newMapleServer(classifier)
 
@@ -361,7 +361,7 @@ func TestProcessCaseRunsGroupScanForUnfilteredDocuments(t *testing.T) {
 		{Name: "consistency", Signal: "positive", Rating: "high"},
 		{Name: "references", Signal: "positive", Rating: "high"},
 		{Name: "emotive_language", Signal: "negative", Rating: "low"},
-		{Name: "ideology_or_incentives", Signal: "negative", Rating: "low"},
+		{Name: "ideology", Signal: "negative", Rating: "low"},
 	}
 	classifier.groupReport = []heuristic{
 		{Name: "corroboration", Signal: "positive", Rating: "high", Description: "docs corroborate"},
@@ -421,15 +421,15 @@ func TestProcessCaseExcludesFilteredDocumentsFromGroupScan(t *testing.T) {
 		reportsByID: map[string][]heuristic{
 			"filtered.txt": {
 				{Name: "emotive_language", Signal: "negative", Rating: "medium"},
-				{Name: "ideology_or_incentives", Signal: "negative", Rating: "high"},
+				{Name: "ideology", Signal: "negative", Rating: "high"},
 			},
 			"kept-1.txt": {
 				{Name: "emotive_language", Signal: "negative", Rating: "low"},
-				{Name: "ideology_or_incentives", Signal: "negative", Rating: "low"},
+				{Name: "ideology", Signal: "negative", Rating: "low"},
 			},
 			"kept-2.txt": {
 				{Name: "emotive_language", Signal: "negative", Rating: "low"},
-				{Name: "ideology_or_incentives", Signal: "negative", Rating: "low"},
+				{Name: "ideology", Signal: "negative", Rating: "low"},
 			},
 		},
 	})
@@ -467,11 +467,11 @@ func TestProcessCaseSkipsGroupScanWhenFewerThanTwoDocumentsRemain(t *testing.T) 
 		reportsByID: map[string][]heuristic{
 			"filtered.txt": {
 				{Name: "emotive_language", Signal: "negative", Rating: "medium"},
-				{Name: "ideology_or_incentives", Signal: "negative", Rating: "high"},
+				{Name: "ideology", Signal: "negative", Rating: "high"},
 			},
 			"kept.txt": {
 				{Name: "emotive_language", Signal: "negative", Rating: "low"},
-				{Name: "ideology_or_incentives", Signal: "negative", Rating: "low"},
+				{Name: "ideology", Signal: "negative", Rating: "low"},
 			},
 		},
 	})

@@ -151,7 +151,7 @@ func TestReplaceClassifiedMarksDocumentFilteredWhenAllNegativeHeuristicsAreMediu
 			{Name: "consistency", Signal: "positive", Rating: "low"},
 			{Name: "references", Signal: "positive", Rating: "low"},
 			{Name: "emotive_language", Signal: "negative", Rating: "medium"},
-			{Name: "ideology_or_incentives", Signal: "negative", Rating: "high"},
+			{Name: "ideology", Signal: "negative", Rating: "high"},
 		},
 	}, nil)
 
@@ -180,7 +180,7 @@ func TestTopicTriageUsesLLMImportanceAndEvidenceQuality(t *testing.T) {
 				{Name: "consistency", Signal: "positive", Rating: "high"},
 				{Name: "references", Signal: "positive", Rating: "high"},
 				{Name: "emotive_language", Signal: "negative", Rating: "low"},
-				{Name: "ideology_or_incentives", Signal: "negative", Rating: "low"},
+				{Name: "ideology", Signal: "negative", Rating: "low"},
 			},
 			want: "high",
 		},
@@ -191,7 +191,7 @@ func TestTopicTriageUsesLLMImportanceAndEvidenceQuality(t *testing.T) {
 				{Name: "consistency", Signal: "positive", Rating: "low"},
 				{Name: "references", Signal: "positive", Rating: "low"},
 				{Name: "emotive_language", Signal: "negative", Rating: "high"},
-				{Name: "ideology_or_incentives", Signal: "negative", Rating: "high"},
+				{Name: "ideology", Signal: "negative", Rating: "high"},
 			},
 			want: "medium",
 		},
@@ -202,7 +202,7 @@ func TestTopicTriageUsesLLMImportanceAndEvidenceQuality(t *testing.T) {
 				{Name: "consistency", Signal: "positive", Rating: "low"},
 				{Name: "references", Signal: "positive", Rating: "low"},
 				{Name: "emotive_language", Signal: "negative", Rating: "high"},
-				{Name: "ideology_or_incentives", Signal: "negative", Rating: "high"},
+				{Name: "ideology", Signal: "negative", Rating: "high"},
 			},
 			want: "low",
 		},
@@ -213,7 +213,7 @@ func TestTopicTriageUsesLLMImportanceAndEvidenceQuality(t *testing.T) {
 				{Name: "consistency", Signal: "positive", Rating: "high"},
 				{Name: "references", Signal: "positive", Rating: "high"},
 				{Name: "emotive_language", Signal: "negative", Rating: "low"},
-				{Name: "ideology_or_incentives", Signal: "negative", Rating: "low"},
+				{Name: "ideology", Signal: "negative", Rating: "low"},
 			},
 			want: "low",
 		},
@@ -260,7 +260,7 @@ func TestTopicTriageFallsBackToSensitivityWhenImportanceMissing(t *testing.T) {
 			{Name: "consistency", Signal: "positive", Rating: "high"},
 			{Name: "references", Signal: "positive", Rating: "high"},
 			{Name: "emotive_language", Signal: "negative", Rating: "low"},
-			{Name: "ideology_or_incentives", Signal: "negative", Rating: "low"},
+			{Name: "ideology", Signal: "negative", Rating: "low"},
 		},
 	}, nil)
 
@@ -280,13 +280,13 @@ func TestEvidenceQualityTreatsContestedNarrativeAsCautionNotFilter(t *testing.T)
 			{Name: "consistency", Signal: "positive", Rating: "high"},
 			{Name: "references", Signal: "positive", Rating: "high"},
 			{Name: "emotive_language", Signal: "negative", Rating: "low"},
-			{Name: "ideology_or_incentives", Signal: "negative", Rating: "low"},
+			{Name: "ideology", Signal: "negative", Rating: "low"},
 		}},
 		{Heuristics: []heuristic{
 			{Name: "consistency", Signal: "positive", Rating: "high"},
 			{Name: "references", Signal: "positive", Rating: "high"},
 			{Name: "emotive_language", Signal: "negative", Rating: "low"},
-			{Name: "ideology_or_incentives", Signal: "negative", Rating: "low"},
+			{Name: "ideology", Signal: "negative", Rating: "low"},
 		}},
 	}
 
@@ -324,7 +324,7 @@ func TestTimelineHeuristicsEvidenceQualityAndFiltering(t *testing.T) {
 			{Name: "consistency", Signal: "positive", Rating: "medium"},
 			{Name: "references", Signal: "positive", Rating: "medium"},
 			{Name: "emotive_language", Signal: "negative", Rating: "low"},
-			{Name: "ideology_or_incentives", Signal: "negative", Rating: "low"},
+			{Name: "ideology", Signal: "negative", Rating: "low"},
 		}},
 	}
 
@@ -347,7 +347,7 @@ func TestTimelineHeuristicsEvidenceQualityAndFiltering(t *testing.T) {
 			{Name: "consistency", Signal: "positive", Rating: "medium"},
 			{Name: "references", Signal: "positive", Rating: "medium"},
 			{Name: "emotive_language", Signal: "negative", Rating: "medium"},
-			{Name: "ideology_or_incentives", Signal: "negative", Rating: "medium"},
+			{Name: "ideology", Signal: "negative", Rating: "medium"},
 		}},
 	}
 
@@ -378,7 +378,7 @@ func TestShouldFilterDocumentIgnoresPositiveHeuristics(t *testing.T) {
 				{Name: "consistency", Signal: "positive", Rating: "high"},
 				{Name: "references", Signal: "positive", Rating: "high"},
 				{Name: "emotive_language", Signal: "negative", Rating: "low"},
-				{Name: "ideology_or_incentives", Signal: "negative", Rating: "medium"},
+				{Name: "ideology", Signal: "negative", Rating: "medium"},
 			},
 			want: false,
 		},
@@ -388,7 +388,7 @@ func TestShouldFilterDocumentIgnoresPositiveHeuristics(t *testing.T) {
 				{Name: "consistency", Signal: "positive", Rating: "low"},
 				{Name: "references", Signal: "positive", Rating: "low"},
 				{Name: "emotive_language", Signal: "negative", Rating: "medium"},
-				{Name: "ideology_or_incentives", Signal: "negative", Rating: "high"},
+				{Name: "ideology", Signal: "negative", Rating: "high"},
 			},
 			want: true,
 		},

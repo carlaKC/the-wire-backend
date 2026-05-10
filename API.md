@@ -68,7 +68,7 @@ The `/cases/{case_id}/topics/{topic_id}/documents` endpoint always returns this 
 | `consistency` | positive | Document is internally coherent and free from obvious factual contradictions or impossible timelines. |
 | `references` | positive | Document includes concrete, potentially verifiable references (transaction IDs, dates, addresses, named events, etc.). |
 | `emotive_language` | negative | Document relies on emotional rhetoric, inflammatory wording, or personal attacks rather than factual descriptions. |
-| `ideology_or_incentives` | negative | Document appears motivated by ideological persuasion, agenda, vendetta, or financial incentive rather than reporting. |
+| `ideology` | negative | Document appears motivated by ideological persuasion, agenda, vendetta, or financial incentive rather than reporting. |
 
 The names and signals are stable. The `rating` and `description` are produced per document by the model.
 
@@ -258,7 +258,7 @@ Each document carries the closed set of four per-document heuristics described i
         { "name": "consistency",            "signal": "positive", "rating": "high",   "description": "Dates, parties, and dollar amounts are internally consistent." },
         { "name": "references",             "signal": "positive", "rating": "medium", "description": "Names a vendor and an invoice number; no transaction IDs." },
         { "name": "emotive_language",       "signal": "negative", "rating": "low",    "description": "Tone is procedural; no inflammatory language." },
-        { "name": "ideology_or_incentives", "signal": "negative", "rating": "low",    "description": "No agenda or personal incentives are evident." }
+        { "name": "ideology", "signal": "negative", "rating": "low",    "description": "No agenda or personal incentives are evident." }
       ]
     }
   ]

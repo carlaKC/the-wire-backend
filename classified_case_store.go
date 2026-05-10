@@ -471,7 +471,7 @@ func evidenceQualityScore(h heuristic) (int, bool) {
 	name := normalizedTopic(h.Name)
 	switch name {
 	case "consistency", "references", "corroboration", "shared_references", "timeline_coherence":
-	case "emotive_language", "ideology_or_incentives", "coordinated_framing", "shared_agenda":
+	case "emotive_language", "ideology", "coordinated_framing", "shared_agenda":
 	default:
 		return 0, false
 	}
@@ -492,7 +492,7 @@ func evidenceQualityScore(h heuristic) (int, bool) {
 
 func heuristicSignal(name string) string {
 	switch normalizedTopic(name) {
-	case "emotive_language", "ideology_or_incentives", "coordinated_framing", "shared_agenda":
+	case "emotive_language", "ideology", "coordinated_framing", "shared_agenda":
 		return "negative"
 	default:
 		return "positive"
