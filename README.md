@@ -65,12 +65,42 @@ Prerequisites:
 * Golang installed
 
 LLM integration:
+* [opencode](https://opencode.ai/) installed and authenticated
 * Maple API key and [proxy](https://github.com/opensecretcloud/maple-proxy)
 * Claude API key
 
 To install:
 ```
 go build
+```
+
+### To Run with opencode
+
+This is the preferred live classification mode. It shells out to
+`opencode run` for each model-backed classification call and uses the
+provider/model configured in `OPENCODE_MODEL`.
+
+Set the following environment variables:
+```
+OPENCODE_MODEL={provider/model}
+```
+
+For OpenRouter, set the API key expected by opencode and include the
+`openrouter/` provider prefix in the model name:
+```
+OPENROUTER_API_KEY={secret}
+OPENCODE_MODEL=openrouter/google/gemini-3.1-pro-preview
+```
+
+Optional:
+```
+OPENCODE_BIN=opencode
+OPENCODE_TIMEOUT_SECONDS=300
+```
+
+Run:
+```
+./backend --opencode
 ```
 
 ### To Run with Maple
@@ -88,7 +118,7 @@ Run:
 ### To Run with Claude
 
 Note: This mode will report your data to Anthropic! It is primarily
-supported for testing and demonstration purposes.
+supported as a direct-client fallback for testing and demonstration purposes.
 
 Set the following environment variables:
 ```

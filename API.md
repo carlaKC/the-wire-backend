@@ -1,6 +1,6 @@
 # The Wire — Document Grading API
 
-HTTP API for submitting whistleblower document dumps and retrieving topic-grouped, heuristic-graded results. The server classifies submitted text through a Maple-compatible chat completion endpoint and stores processed cases in memory.
+HTTP API for submitting whistleblower document dumps and retrieving topic-grouped, heuristic-graded results. In live mode, the server classifies submitted text through opencode, Maple, or Claude and stores processed cases in memory.
 
 ## Running the server
 
@@ -17,7 +17,7 @@ Classification settings:
 - `MAPLE_BASE_URL` defaults to `http://127.0.0.1:8081`.
 - `MAPLE_MODEL` defaults to `deepseek-v4-pro`.
 
-Without `--nomock`, the server keeps the hardcoded mock responses for frontend development. Maple is the only non-mock processing mode.
+Without `--nomock`, `--opencode`, or `--claude`, the server keeps the hardcoded mock responses for frontend development. opencode is the preferred non-mock processing mode; direct Maple and Claude modes remain available as fallbacks.
 
 CORS is permissive (`Access-Control-Allow-Origin: *`) — the API can be called from any frontend origin without a proxy.
 
@@ -129,8 +129,8 @@ Cases are stored in process memory. Restarting the server clears previously crea
 
 ## Classification mapping
 
-- `POST /cases` validates the request, returns the case id, and sends submitted document text to Maple in the background.
-- The server sends existing global topics to Maple. Maple assigns each document to an existing topic when one fits, or returns a new topic title/description when no existing topic fits.
+- `POST /cases` validates the request, returns the case id, and sends submitted document text to the configured live classifier in the background.
+- The server sends existing global topics to the classifier. The classifier assigns each document to an existing topic when one fits, or returns a new topic title/description when no existing topic fits.
 - Topic IDs are assigned by the server and are reusable across cases.
 - The original submitted filename/content is preserved in document responses.
 - Topic `triage` on case endpoints is based on LLM-assessed topic importance gated by evidence quality. If an older model response omits topic importance, the server falls back to the highest sensitivity seen for that topic in that case: level 1 -> `low`, level 2 -> `medium`, levels 3-4 -> `high`.

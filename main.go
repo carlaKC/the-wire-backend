@@ -64,6 +64,7 @@ func registerMockHandlers(mux *http.ServeMux) {
 func main() {
 	nomock := flag.Bool("nomock", false, "use Maple-backed in-memory classification instead of hardcoded mock data")
 	useClaude := flag.Bool("claude", false, "use Anthropic Claude (ANTHROPIC_API_KEY) as the classification backend instead of Maple; implies live (non-mock) classification")
+	useOpencode := flag.Bool("opencode", false, "use opencode run (OPENCODE_MODEL) as the classification backend; implies live (non-mock) classification")
 	flag.Parse()
 
 	port := os.Getenv("PORT")
@@ -75,6 +76,24 @@ func main() {
 	mux.HandleFunc("GET /healthcheck", healthHandler)
 
 	switch {
+	case *useOpencode:
+		model := os.Getenv("OPENCODE_MODEL")
+		if model == "" {
+			log.Fatal("--opencode requires OPENCODE_MODEL to be set")
+		}
+		timeout := opencodeTimeoutFromEnv()
+		bin := envOrDefault("OPENCODE_BIN", defaultOpencodeBin)
+		log.Printf("opencode client: timeout=%s bin=%s model=%s", timeout, bin, model)
+		client := opencodeClient{
+			bin:     bin,
+			model:   model,
+			timeout: timeout,
+		}
+		classifier := mapleClassifier{
+			model:  model,
+			client: client,
+		}
+		registerMapleHandlers(mux, newMapleServer(classifier))
 	case *useClaude:
 		apiKey := os.Getenv("ANTHROPIC_API_KEY")
 		if apiKey == "" {
@@ -122,7 +141,7 @@ func main() {
 	}
 
 	addr := ":" + port
-	log.Printf("listening on %s (nomock=%v claude=%v)", addr, *nomock, *useClaude)
+	log.Printf("listening on %s (nomock=%v claude=%v opencode=%v)", addr, *nomock, *useClaude, *useOpencode)
 	if err := http.ListenAndServe(addr, withCORS(mux)); err != nil {
 		log.Fatal(err)
 	}
