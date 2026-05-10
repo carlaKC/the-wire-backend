@@ -431,7 +431,7 @@ func TestProcessCaseExcludesFilteredDocumentsFromGroupScan(t *testing.T) {
 		controlledClassifier: classifier,
 		reportsByID: map[string][]heuristic{
 			"filtered.txt": {
-				{Name: "emotive_language", Signal: "negative", Rating: "medium"},
+				{Name: "emotive_language", Signal: "negative", Rating: "high"},
 				{Name: "ideology", Signal: "negative", Rating: "high"},
 			},
 			"kept-1.txt": {
@@ -477,7 +477,7 @@ func TestProcessCaseSkipsGroupScanWhenFewerThanTwoDocumentsRemain(t *testing.T) 
 		controlledClassifier: classifier,
 		reportsByID: map[string][]heuristic{
 			"filtered.txt": {
-				{Name: "emotive_language", Signal: "negative", Rating: "medium"},
+				{Name: "emotive_language", Signal: "negative", Rating: "high"},
 				{Name: "ideology", Signal: "negative", Rating: "high"},
 			},
 			"kept.txt": {

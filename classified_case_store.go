@@ -680,19 +680,17 @@ func ratingFromValidationMix(statuses map[string]int) string {
 }
 
 func shouldFilterDocument(heuristics []heuristic) bool {
-	negativeCount := 0
+	emotiveRating := ""
+	ideologyRating := ""
 	for _, h := range heuristics {
-		if normalizedTopic(h.Signal) != "negative" {
-			continue
-		}
-		negativeCount++
-		switch normalizedTopic(h.Rating) {
-		case "medium", "high":
-		default:
-			return false
+		switch normalizedTopic(h.Name) {
+		case "emotive_language":
+			emotiveRating = normalizedRating(h.Rating)
+		case "ideology":
+			ideologyRating = normalizedRating(h.Rating)
 		}
 	}
-	return negativeCount > 0
+	return emotiveRating == "high" && (ideologyRating == "medium" || ideologyRating == "high")
 }
 
 func ratingFromClaimCount(count int) string {

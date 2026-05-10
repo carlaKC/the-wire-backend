@@ -73,7 +73,7 @@ The `/cases/{case_id}/topics/{topic_id}/documents` endpoint always returns this 
 
 The names and signals are stable. The `rating` and `description` are produced per document by the model.
 
-Document responses include `filtered`, a boolean derived only from negative-signal heuristics. `filtered` is `true` when every negative heuristic has a `rating` of `medium` or `high`; positive heuristics do not affect this flag. If any negative heuristic is `low`, or if there are no negative heuristics, `filtered` is `false`.
+Document responses include `filtered`, a boolean derived from the two negative-signal heuristics. `filtered` is `true` only when `emotive_language` is `high` and `ideology` is `medium` or `high`; positive heuristics do not affect this flag. If `emotive_language` is below `high`, or `ideology` is `low`, `filtered` is `false`.
 
 ## Facts to verify
 
@@ -253,7 +253,7 @@ The documents from this case that are assigned to the topic, with their raw cont
 
 Each document carries the closed set of four per-document heuristics described in [Document heuristics](#document-heuristics) and an open list of [facts to verify](#facts-to-verify).
 
-`filtered` indicates that the document's negative-signal heuristics all rated `medium` or `high`, so clients can exclude or de-emphasize it when presenting the topic group.
+`filtered` indicates that the document has `high` emotive language and `medium` or `high` ideology, so clients can exclude or de-emphasize it when presenting the topic group.
 
 **Response 200**:
 ```json

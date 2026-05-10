@@ -137,7 +137,7 @@ func TestReplaceClassifiedMergesNewTopicsByTitle(t *testing.T) {
 	}
 }
 
-func TestReplaceClassifiedMarksDocumentFilteredWhenAllNegativeHeuristicsAreMediumOrHigh(t *testing.T) {
+func TestReplaceClassifiedMarksDocumentFilteredWhenEmotiveHighAndIdeologyMediumOrHigh(t *testing.T) {
 	store := newClassifiedCaseStore()
 	createdAt := time.Date(2026, 5, 9, 12, 0, 0, 0, time.UTC)
 	caseID := store.create(emptyCaseData(createdAt, 1))
@@ -150,7 +150,7 @@ func TestReplaceClassifiedMarksDocumentFilteredWhenAllNegativeHeuristicsAreMediu
 		"bad.txt": {
 			{Name: "consistency", Signal: "positive", Rating: "low"},
 			{Name: "references", Signal: "positive", Rating: "low"},
-			{Name: "emotive_language", Signal: "negative", Rating: "medium"},
+			{Name: "emotive_language", Signal: "negative", Rating: "high"},
 			{Name: "ideology", Signal: "negative", Rating: "high"},
 		},
 	}), nil)
@@ -414,12 +414,22 @@ func TestShouldFilterDocumentIgnoresPositiveHeuristics(t *testing.T) {
 			want: false,
 		},
 		{
-			name: "all negative medium or high filters",
+			name: "medium emotion and high ideology does not filter",
 			heuristics: []heuristic{
 				{Name: "consistency", Signal: "positive", Rating: "low"},
 				{Name: "references", Signal: "positive", Rating: "low"},
 				{Name: "emotive_language", Signal: "negative", Rating: "medium"},
 				{Name: "ideology", Signal: "negative", Rating: "high"},
+			},
+			want: false,
+		},
+		{
+			name: "high emotion and medium ideology filters",
+			heuristics: []heuristic{
+				{Name: "consistency", Signal: "positive", Rating: "low"},
+				{Name: "references", Signal: "positive", Rating: "low"},
+				{Name: "emotive_language", Signal: "negative", Rating: "high"},
+				{Name: "ideology", Signal: "negative", Rating: "medium"},
 			},
 			want: true,
 		},

@@ -1,13 +1,13 @@
 # Prompt: per-document filtering demo
 
-**API behavior demonstrated**: a document is `filtered: true` when **every** negative-signal heuristic (`emotive_language`, `ideology`) rates `medium` or `high`. If either rates `low`, the document passes filtering. Filtered documents are excluded from the group-heuristic scan.
+**API behavior demonstrated**: a document is `filtered: true` only when `emotive_language` is `high` and `ideology` is `medium` or `high`. If `emotive_language` is below `high`, or `ideology` is `low`, the document passes filtering. Filtered documents are excluded from the group-heuristic scan.
 
 This prompt produces a four-tip set that hits each cell of the 2×2:
 
-|                          | emotive low | emotive medium/high |
-|--------------------------|-------------|---------------------|
-| **ideology low**         | passes (T1) | passes (T2)         |
-| **ideology medium/high** | passes (T3) | **filtered (T4)**   |
+|                          | emotive low/medium | emotive high      |
+|--------------------------|--------------------|-------------------|
+| **ideology low**         | passes (T1)        | passes (T2)       |
+| **ideology medium/high** | passes (T3)        | **filtered (T4)** |
 
 ## Use this prompt
 
