@@ -127,8 +127,8 @@ func TestMapleCreateCaseStartsProcessingAndCompletes(t *testing.T) {
 	if !strings.Contains(detail.Topic.Description, "Triage: "+detail.Topic.Triage) {
 		t.Fatalf("topic description does not include triage note: %q", detail.Topic.Description)
 	}
-	if !containsTopicHeuristicNamed(detail.Topic.Heuristics, "importance") {
-		t.Errorf("topic heuristics missing importance. got: %v", topicHeuristicNames(detail.Topic.Heuristics))
+	if !containsTopicHeuristicNamed(detail.Topic.Heuristics, "impact") {
+		t.Errorf("topic heuristics missing impact. got: %v", topicHeuristicNames(detail.Topic.Heuristics))
 	}
 	docs := getMapleTopicDocuments(t, srv, caseID, topicID)
 	if got := len(docs.Documents); got != 1 {

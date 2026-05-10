@@ -166,16 +166,16 @@ func TestReplaceClassifiedMarksDocumentFilteredWhenEmotiveHighAndIdeologyMediumO
 	}
 }
 
-func TestTopicTriageUsesLLMImportanceAndEvidenceQuality(t *testing.T) {
+func TestTopicTriageUsesLLMImpactAndEvidenceQuality(t *testing.T) {
 	tests := []struct {
 		name       string
-		importance classifiedImportance
+		impact     classifiedImpact
 		heuristics []heuristic
 		want       string
 	}{
 		{
-			name:       "high importance with good quality stays high",
-			importance: classifiedImportance{Score: "high", Explanation: "Payment concealment is important."},
+			name:   "high impact with good quality stays high",
+			impact: classifiedImpact{Score: "high", Explanation: "Payment concealment is important."},
 			heuristics: []heuristic{
 				{Name: "consistency", Signal: "positive", Rating: "high"},
 				{Name: "references", Signal: "positive", Rating: "high"},
@@ -185,8 +185,8 @@ func TestTopicTriageUsesLLMImportanceAndEvidenceQuality(t *testing.T) {
 			want: "high",
 		},
 		{
-			name:       "high importance with poor quality is gated to medium",
-			importance: classifiedImportance{Score: "high", Explanation: "Payment concealment is important."},
+			name:   "high impact with poor quality is gated to medium",
+			impact: classifiedImpact{Score: "high", Explanation: "Payment concealment is important."},
 			heuristics: []heuristic{
 				{Name: "consistency", Signal: "positive", Rating: "low"},
 				{Name: "references", Signal: "positive", Rating: "low"},
@@ -196,8 +196,8 @@ func TestTopicTriageUsesLLMImportanceAndEvidenceQuality(t *testing.T) {
 			want: "medium",
 		},
 		{
-			name:       "medium importance with poor quality becomes low",
-			importance: classifiedImportance{Score: "medium", Explanation: "Process issue."},
+			name:   "medium impact with poor quality becomes low",
+			impact: classifiedImpact{Score: "medium", Explanation: "Process issue."},
 			heuristics: []heuristic{
 				{Name: "consistency", Signal: "positive", Rating: "low"},
 				{Name: "references", Signal: "positive", Rating: "low"},
@@ -207,8 +207,8 @@ func TestTopicTriageUsesLLMImportanceAndEvidenceQuality(t *testing.T) {
 			want: "low",
 		},
 		{
-			name:       "low importance stays low with good quality",
-			importance: classifiedImportance{Score: "low", Explanation: "Minor issue."},
+			name:   "low impact stays low with good quality",
+			impact: classifiedImpact{Score: "low", Explanation: "Minor issue."},
 			heuristics: []heuristic{
 				{Name: "consistency", Signal: "positive", Rating: "high"},
 				{Name: "references", Signal: "positive", Rating: "high"},
@@ -224,7 +224,7 @@ func TestTopicTriageUsesLLMImportanceAndEvidenceQuality(t *testing.T) {
 			store := newClassifiedCaseStore()
 			createdAt := time.Date(2026, 5, 9, 12, 0, 0, 0, time.UTC)
 			caseID := store.create(emptyCaseData(createdAt, 1))
-			topic := classifiedTopic{Title: "Procurement", Topic: "procurement", Importance: tt.importance}
+			topic := classifiedTopic{Title: "Procurement", Topic: "procurement", Impact: tt.impact}
 			store.replaceClassified(caseID, createdAt, []classifiedInput{
 				{ID: "memo.txt", Filename: "memo.txt", Content: "Memo body."},
 			}, classificationReport{Documents: []classifiedDocument{
@@ -246,7 +246,7 @@ func TestTopicTriageUsesLLMImportanceAndEvidenceQuality(t *testing.T) {
 	}
 }
 
-func TestTopicTriageFallsBackToSensitivityWhenImportanceMissing(t *testing.T) {
+func TestTopicTriageFallsBackToSensitivityWhenImpactMissing(t *testing.T) {
 	store := newClassifiedCaseStore()
 	createdAt := time.Date(2026, 5, 9, 12, 0, 0, 0, time.UTC)
 	caseID := store.create(emptyCaseData(createdAt, 1))

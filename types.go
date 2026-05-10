@@ -44,7 +44,7 @@ type topicDetail struct {
 }
 
 type triageRationale struct {
-	Importance      string `json:"importance"`
+	Impact          string `json:"impact"`
 	EvidenceQuality string `json:"evidence_quality"`
 	Final           string `json:"final"`
 	Description     string `json:"description"`

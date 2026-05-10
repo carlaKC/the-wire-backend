@@ -151,7 +151,7 @@ func (c *recordingChatCompleter) ChatCompletion(_ context.Context, req chatReque
 
 func TestMapleClassifierUsesInjectedChatCompleter(t *testing.T) {
 	completer := &recordingChatCompleter{
-		contents: []string{`{"documents":[{"id":"doc-1","topic":{"title":"Ops","topic":"ops","confidence":0.9,"importance":{"score":"medium","explanation":"Operational concern."}},"document_type":{"topic":"memo","confidence":0.8},"sensitivity":{"level":2,"label":"medium","confidence":0.7},"rationale":"ops memo","claims":[]}]}`},
+		contents: []string{`{"documents":[{"id":"doc-1","topic":{"title":"Ops","topic":"ops","confidence":0.9,"impact":{"score":"medium","explanation":"Operational concern."}},"document_type":{"topic":"memo","confidence":0.8},"sensitivity":{"level":2,"label":"medium","confidence":0.7},"rationale":"ops memo","claims":[]}]}`},
 	}
 	classifier := mapleClassifier{
 		model:  "classification-model",
@@ -176,11 +176,11 @@ func TestMapleClassifierUsesInjectedChatCompleter(t *testing.T) {
 	if completer.requests[0].ResponseFormat.Type != "json_object" {
 		t.Errorf("response format = %q, want json_object", completer.requests[0].ResponseFormat.Type)
 	}
-	if report.Documents[0].Topic.Importance.Score != "medium" {
-		t.Errorf("importance score = %q, want medium", report.Documents[0].Topic.Importance.Score)
+	if report.Documents[0].Topic.Impact.Score != "medium" {
+		t.Errorf("impact score = %q, want medium", report.Documents[0].Topic.Impact.Score)
 	}
-	if !strings.Contains(completer.requests[0].Messages[0].Content, "topic.importance") {
-		t.Errorf("classification prompt does not request topic.importance: %q", completer.requests[0].Messages[0].Content)
+	if !strings.Contains(completer.requests[0].Messages[0].Content, "topic.impact") {
+		t.Errorf("classification prompt does not request topic.impact: %q", completer.requests[0].Messages[0].Content)
 	}
 }
 

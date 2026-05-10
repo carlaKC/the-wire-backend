@@ -36,17 +36,17 @@ type classifiedCaseStore struct {
 }
 
 type topicBuild struct {
-	id                    int
-	title                 string
-	description           string
-	maxLevel              int
-	documents             []documentResponse
-	claimCount            int
-	statuses              map[string]int
-	docTypes              map[string]int
-	groupKey              string
-	importanceScore       string
-	importanceExplanation string
+	id                int
+	title             string
+	description       string
+	maxLevel          int
+	documents         []documentResponse
+	claimCount        int
+	statuses          map[string]int
+	docTypes          map[string]int
+	groupKey          string
+	impactScore       string
+	impactExplanation string
 }
 
 func newClassifiedCaseStore() *classifiedCaseStore {
@@ -171,10 +171,10 @@ func (s *classifiedCaseStore) buildCaseDataLocked(createdAt time.Time, inputs []
 		}
 
 		topic := topics[global.id]
-		score, explanation := classifiedImportanceRating(classified, topic.maxLevel)
-		if ratingRank(score) > ratingRank(topic.importanceScore) {
-			topic.importanceScore = score
-			topic.importanceExplanation = explanation
+		score, explanation := classifiedImpactRating(classified, topic.maxLevel)
+		if ratingRank(score) > ratingRank(topic.impactScore) {
+			topic.impactScore = score
+			topic.impactExplanation = explanation
 		}
 		topic.maxLevel = max(topic.maxLevel, classified.Sensitivity.Level)
 		topic.claimCount += len(classified.Claims)
@@ -374,27 +374,27 @@ func validationHeuristicDescription(rating string) string {
 }
 
 func topicTriage(topic *topicBuild, topicHeuristics []heuristic) triageRationale {
-	importance := normalizedRating(topic.importanceScore)
-	if importance == "" {
-		importance = triageFromSensitivity(topic.maxLevel)
+	impact := normalizedRating(topic.impactScore)
+	if impact == "" {
+		impact = triageFromSensitivity(topic.maxLevel)
 	}
 	quality := evidenceQuality(topic.documents, topicHeuristics)
-	final := finalTriage(importance, quality)
-	description := topic.importanceExplanation
+	final := finalTriage(impact, quality)
+	description := topic.impactExplanation
 	if description == "" {
-		description = "Importance falls back to the highest classified sensitivity in this topic."
+		description = "Impact falls back to the highest classified sensitivity in this topic."
 	}
 	return triageRationale{
-		Importance:      importance,
+		Impact:          impact,
 		EvidenceQuality: quality,
 		Final:           final,
-		Description:     "Importance: " + description + " Evidence quality is " + quality + ".",
+		Description:     "Impact: " + description + " Evidence quality is " + quality + ".",
 	}
 }
 
 func topicDescriptionWithTriage(description string, r triageRationale) string {
 	description = strings.TrimSpace(description)
-	note := "Triage: " + r.Final + " because importance is " + r.Importance + " and evidence quality is " + r.EvidenceQuality + "."
+	note := "Triage: " + r.Final + " because impact is " + r.Impact + " and evidence quality is " + r.EvidenceQuality + "."
 	if description == "" {
 		return note
 	}
@@ -404,9 +404,9 @@ func topicDescriptionWithTriage(description string, r triageRationale) string {
 func triageHeuristics(r triageRationale) []heuristic {
 	return []heuristic{
 		{
-			Name:        "importance",
+			Name:        "impact",
 			Signal:      "positive",
-			Rating:      r.Importance,
+			Rating:      r.Impact,
 			Description: r.Description,
 		},
 		{
@@ -418,10 +418,10 @@ func triageHeuristics(r triageRationale) []heuristic {
 	}
 }
 
-func classifiedImportanceRating(document classifiedDocument, fallbackLevel int) (string, string) {
-	score := normalizedRating(document.Topic.Importance.Score)
+func classifiedImpactRating(document classifiedDocument, fallbackLevel int) (string, string) {
+	score := normalizedRating(document.Topic.Impact.Score)
 	if score != "" {
-		return score, strings.TrimSpace(document.Topic.Importance.Explanation)
+		return score, strings.TrimSpace(document.Topic.Impact.Explanation)
 	}
 	maxLevel := max(fallbackLevel, document.Sensitivity.Level)
 	for _, claim := range document.Claims {
@@ -430,8 +430,8 @@ func classifiedImportanceRating(document classifiedDocument, fallbackLevel int) 
 	return triageFromSensitivity(maxLevel), ""
 }
 
-func finalTriage(importance, quality string) string {
-	switch normalizedRating(importance) {
+func finalTriage(impact, quality string) string {
+	switch normalizedRating(impact) {
 	case "high":
 		if normalizedRating(quality) == "low" {
 			return "medium"
