@@ -55,6 +55,9 @@ more real world robust:
    information. The ability to identify documents associated with each
    narrative, and their respective strength, will be helpful to filter
    out this noise.
+5. Human Feedback: AI can iteratively learn from its mistakes.
+   Gathering feedback from human-review of classification and rankings
+   to re-run analysis will make reporting much stronger over time.
 
 ## Running this Code
 
