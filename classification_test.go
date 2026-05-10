@@ -506,6 +506,46 @@ func TestParseClassificationContentAcceptsStringClaims(t *testing.T) {
 	}
 }
 
+func TestParseClassificationContentAcceptsLooseClaimFields(t *testing.T) {
+	report, err := parseClassificationContent(`{
+		"documents": [
+			{
+				"id": "memo.txt",
+				"topic": {
+					"id": 0,
+					"title": "Irregular Payment to Atlas Holdings",
+					"description": "Payment without purchase order."
+				},
+				"document_type": {"topic": "memo", "confidence": 0.8},
+				"sensitivity": {"level": 3, "label": "high", "confidence": 0.9},
+				"rationale": "Contains evidence of financial irregularity.",
+				"claims": [
+					{
+						"id": 7,
+						"claim": "Atlas Holdings was paid without a purchase order.",
+						"topic": "payment irregularity",
+						"confidence": 0.9,
+						"evidence": "paid without a purchase order",
+						"validation": "supported",
+						"sensitivity": {"level": 3, "label": "high", "confidence": 0.9},
+						"flags": []
+					}
+				]
+			}
+		]
+	}`)
+	if err != nil {
+		t.Fatalf("parseClassificationContent returned error: %v", err)
+	}
+	claim := report.Documents[0].Claims[0]
+	if claim.ID != "7" {
+		t.Errorf("claim id = %q, want 7", claim.ID)
+	}
+	if claim.Validation.Status != "supported" {
+		t.Errorf("validation status = %q, want supported", claim.Validation.Status)
+	}
+}
+
 func TestParseClassificationContentExtractsWrappedJSONObject(t *testing.T) {
 	report, err := parseClassificationContent("Here is the JSON:\n" + validClassificationContent() + "\nextra trailing text")
 	if err != nil {

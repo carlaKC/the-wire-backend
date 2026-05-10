@@ -96,12 +96,29 @@ func (c *classifiedClaim) UnmarshalJSON(data []byte) error {
 		return nil
 	}
 
-	type classifiedClaimAlias classifiedClaim
-	var claim classifiedClaimAlias
-	if err := json.Unmarshal(data, &claim); err != nil {
+	var raw struct {
+		ID          flexibleString        `json:"id"`
+		Claim       string                `json:"claim"`
+		Topic       string                `json:"topic"`
+		Confidence  float64               `json:"confidence"`
+		Evidence    string                `json:"evidence"`
+		Validation  classifiedValidation  `json:"validation"`
+		Sensitivity classifiedSensitivity `json:"sensitivity"`
+		Flags       []string              `json:"flags"`
+	}
+	if err := json.Unmarshal(data, &raw); err != nil {
 		return err
 	}
-	*c = classifiedClaim(claim)
+	*c = classifiedClaim{
+		ID:          string(raw.ID),
+		Claim:       raw.Claim,
+		Topic:       raw.Topic,
+		Confidence:  raw.Confidence,
+		Evidence:    raw.Evidence,
+		Validation:  raw.Validation,
+		Sensitivity: raw.Sensitivity,
+		Flags:       raw.Flags,
+	}
 	return nil
 }
 
@@ -109,6 +126,42 @@ type classifiedValidation struct {
 	Status     string  `json:"status"`
 	Confidence float64 `json:"confidence"`
 	Rationale  string  `json:"rationale"`
+}
+
+// UnmarshalJSON accepts both the full validation object and a bare status
+// string. Model repairs occasionally collapse validation to "supported" etc.
+func (v *classifiedValidation) UnmarshalJSON(data []byte) error {
+	var status string
+	if err := json.Unmarshal(data, &status); err == nil {
+		v.Status = status
+		return nil
+	}
+
+	type classifiedValidationAlias classifiedValidation
+	var validation classifiedValidationAlias
+	if err := json.Unmarshal(data, &validation); err != nil {
+		return err
+	}
+	*v = classifiedValidation(validation)
+	return nil
+}
+
+type flexibleString string
+
+func (s *flexibleString) UnmarshalJSON(data []byte) error {
+	var text string
+	if err := json.Unmarshal(data, &text); err == nil {
+		*s = flexibleString(text)
+		return nil
+	}
+
+	var number json.Number
+	if err := json.Unmarshal(data, &number); err == nil {
+		*s = flexibleString(number.String())
+		return nil
+	}
+
+	return fmt.Errorf("expected string or number")
 }
 
 // heuristicsReport is the shape the document-heuristics prompt returns. Keep
