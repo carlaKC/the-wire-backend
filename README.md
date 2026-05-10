@@ -58,6 +58,16 @@ more real world robust:
 5. Human Feedback: AI can iteratively learn from its mistakes.
    Gathering feedback from human-review of classification and rankings
    to re-run analysis will make reporting much stronger over time.
+6. Security Audit: the MVP implementation does not protect against
+   prompt injection, which is a strong attack vector against this
+   system.
+7. Timeline building: to assist in story development, we can use our
+   document processing timeline to surface a timeline of events and
+   disclosure that helps.
+8. Variable tolerance: our current system filters out documents that
+   strongly trigger red flags in document analysis. Allowing
+   flexibility in this filtering provides the ability to investigate
+   at different depths.
 
 ## Running this Code
 
