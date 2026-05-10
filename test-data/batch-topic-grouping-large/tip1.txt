@@ -1,0 +1,13 @@
+TIP 1: State transit bid scoring changed after RFP close
+CHANNEL: secure drop
+RECEIVED: 04 May 2026
+
+I am a contracts analyst in the North Cascades Transit Authority. I worked on RFP NCTA-24-118 for the Redline signal modernization package. The bids closed on 18 September 2024. The initial technical scores put Bowyer Rail Systems second and a lower-priced bidder, Ardent Signal, first.
+
+On 23 September 2024 Deputy Procurement Director Elena Varga sent a revised scoring sheet that added a new "regional familiarity" category worth 18 points. That category had not appeared in the published RFP. The change moved Bowyer from 84.2 to 92.7 and moved Ardent from 88.9 to 86.1. The contract was awarded to Bowyer on 01 October 2024 for $7,840,000.
+
+I have the original score workbook, the revised workbook, and Varga's email to the evaluation committee saying the adjustment was "necessary to keep implementation risk acceptable." Bowyer's account lead, Mason Reilly, had met privately with Varga at the Alder House restaurant two days before the revised sheet was circulated. The meeting appears on Varga's Outlook calendar as "Redline risk review."
+
+This was not the only unusual handling around the Redline package. The procurement file normally includes signed conflict disclosures from every evaluator before scoring begins. In this file, Varga's disclosure was uploaded after the award recommendation, not before. The metadata on the PDF shows it was created on 30 September 2024, one day before the board packet went out. I flagged the missing disclosure to my supervisor, Helen Cho, on 24 September and was told by phone that "Elena has it covered."
+
+I do not know whether Bowyer knew the score sheet would be changed. What I can document is that the published criteria were not the criteria used for the award, and the late-added category favored the bidder whose representative had just met privately with the official who ordered the change. I am willing to share the workbook versions, the calendar screenshot, and the procurement checklist if my identity can be protected.

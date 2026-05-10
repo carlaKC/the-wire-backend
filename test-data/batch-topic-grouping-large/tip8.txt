@@ -1,0 +1,13 @@
+TIP 8: Defense subcontractor procurement steered through consulting fees
+CHANNEL: secure drop
+RECEIVED: 06 May 2026
+
+I was a finance manager at Halden Avionics, a subcontractor on Air Force depot maintenance work. From 2023 through 2025, the Lakehurst sustainment office repeatedly structured task-order evaluations in ways that favored Halden after bid materials had already been submitted.
+
+The pattern was regular. For task orders LH-23-441, LH-24-102, and LH-24-388, Lakehurst contracting officer Dana Mercer accepted "clarification" materials from Halden after the question deadline and allowed revised past-performance tables that other bidders did not get to submit. Within ten business days of each award, Controller Wes Loring approved a Graypoint Strategies invoice for 3.5% of the award value. Graypoint's principal, Cale Mercer, is Dana Mercer's brother-in-law. Across the three task orders, the Graypoint payments totaled $482,600.
+
+I have the Graypoint invoices, ACH confirmations from PNC account ending 7721, and an internal email where Loring wrote, "Dana's channel has to be covered before the next option year." I left Halden in March 2026.
+
+The invoices were vague and always used the same language: "strategic capture support and stakeholder mapping." Graypoint did not appear in the bid files as a subcontractor, consultant, or registered lobbyist. When I asked Loring for backup before approving the LH-24-388 payment, he told me to attach the award notice and not to "over-lawyer an established relationship." He also said the revised past-performance table was "how Lakehurst wants it scored."
+
+I became more concerned when I saw that Graypoint's mailing address matched a townhouse owned by Cale Mercer and his spouse, who is Dana Mercer's sister. The relationship was discussed casually inside Halden but never disclosed in the Lakehurst procurement file as far as I could tell. I have not contacted the Air Force or Graypoint. I am providing this because the late evaluation changes, payment timing, and family connection should be reviewed by someone with access to both sides of the contracting records.

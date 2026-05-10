@@ -1,0 +1,13 @@
+TIP 1: Revenue accounting concern at Pelham Analytics
+CHANNEL: encrypted email
+RECEIVED: 04 May 2026
+
+I am a senior revenue accountant at Pelham Analytics. Since Q1 2026, the controller's team has been booking subscription revenue into the closing quarter based on "early-start" clauses even when the customer signature arrived after quarter end.
+
+The largest examples I reviewed were the Northstar Foods renewal signed by the customer on 04 April 2026 but recognized effective 28 March 2026, and the Cadence Mutual expansion signed on 03 July 2026 but recognized effective 29 June 2026. Together those two deals added $5.7 million to the prior quarter.
+
+I have the ASC 606 memo drafted by Assistant Controller Mira Shah, the Salesforce opportunity history, and the revenue schedule exported from NetSuite on 08 July 2026. Shah told me the policy came from CFO Grant Ellery after the Q1 forecast missed guidance.
+
+The policy memo does not say "backdate," but it treats the contractual start date as controlling even when execution happens later and service access is not provisioned. In the Northstar file, customer access was not enabled until 08 April according to the Okta provisioning log. For Cadence, the implementation kickoff did not occur until 09 July. Those facts were not included in the revenue memo.
+
+I raised the Northstar issue during the April close meeting because the order form had not been signed by quarter end. Ellery said the early-start clause gave us enough support and that auditors would not sample a renewal if the paperwork was complete. I am not a securities lawyer, but I know the accounting file does not reflect when the customers actually committed or received service.

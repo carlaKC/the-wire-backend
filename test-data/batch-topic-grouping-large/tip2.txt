@@ -1,0 +1,13 @@
+TIP 2: Trial endpoint recoding before biologics submission
+CHANNEL: encrypted email
+RECEIVED: 07 May 2026
+
+I work as a clinical data manager at Orison Immunology on the Phase III trial for nalderimab, our lupus nephritis biologic. In March 2026 the safety review group changed how "renal flare with hospitalization" events were coded in the integrated safety dataset used for the BLA.
+
+There were nine events originally coded as serious renal adverse events. On 12 March 2026 Chief Medical Officer Dr. Lea Montez directed the data team to reclassify six of them as "disease progression not treatment emergent." The change lowered the serious adverse event rate in the treatment arm from 5.8% to 3.1%.
+
+I have the Medidata audit trail, the 10 March safety review deck, and an email from regulatory counsel Gideon Park saying the original coding "creates a label conversation we do not want before filing." The altered dataset was exported as `ORIS-NAL-BLA-SAFETY-v4` on 18 March 2026.
+
+The change was not made through the ordinary blinded medical review process. The event narratives had already been locked by the clinical safety physicians, and the case adjudication spreadsheet showed the original coding as of 06 March 2026. After Dr. Montez's instruction, the data-management team was told to enter the revised terms under a bulk query response rather than routing each case back to adjudication.
+
+I raised this on a 15 March call with my manager, Sondra Ives, because the audit trail would show the same user account changing all six cases within a 22-minute window. Ives said the decision had been made above her and that the filing timeline could not move. I am not alleging the drug is unsafe on the basis of these cases alone. I am saying the submission dataset does not reflect the original safety coding.

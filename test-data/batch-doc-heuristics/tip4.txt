@@ -1,0 +1,11 @@
+TIP 4: Reference-rich shell company payment report
+CHANNEL: secure drop
+RECEIVED: 04 May 2026
+
+I am a treasury analyst at Rowan Medical Devices, 455 Brackett Street, Stamford, Connecticut. On 14 November 2025, Rowan wired $742,118.43 from First Atlantic Bank account ending 9081 to Veridian Advisory Limited, a Cyprus entity listed at 12 Iasonos Street, Limassol.
+
+The payment was booked against invoice VAD-2025-447 for "market access support" on purchase order PO-77148. The approval chain in Oracle shows CFO Patrice Noll approved it at 8:41 AM and General Counsel Evan Thorne approved it at 8:46 AM. There is no executed services agreement in the legal drive folder `LEGAL/ROWAN/VENDORS/VERIDIAN`.
+
+I have the SWIFT confirmation MT103 reference FABKUS33-251114-00682, the Oracle approval screenshot, the 12 November 2025 board minutes at page 7, and an email from Controller Mae Shin asking why a Cyprus vendor was being paid from the regulatory affairs cost center.
+
+The payment description also conflicts with the project code used in Oracle. Invoice VAD-2025-447 was charged to cost center RA-204, which is used for FDA submissions, but the invoice refers to "market access support in Central Europe." The vendor master file was created on 10 November 2025 by procurement analyst Jonah Bell and approved the same day by Thorne. The wire was released four days later, before tax documentation was uploaded.

@@ -1,0 +1,13 @@
+TIP 7: CRO excluded high-event trial sites from analysis
+CHANNEL: encrypted email
+RECEIVED: 08 May 2026
+
+I am a biostatistician at Camden Ridge Research, the CRO handling a Phase III trial for Valmereon's migraine drug relutapant. In February 2026 our sponsor contact asked us to remove three trial sites from the safety analysis population before the FDA briefing package.
+
+Sites 014, 022, and 031 had the highest rates of severe dizziness and syncope. The stated reason was "source-document reliability," but the query logs show the same data-quality issues existed at lower-event sites that remained in the dataset. Removing the three sites lowered the severe dizziness rate from 4.6% to 2.2%.
+
+I have the SAS program change log, the 21 February 2026 email from Valmereon VP Clinical Operations Mara Saye, and the before-and-after table named `REL-SAF-ISS-Table-14-3`.
+
+The exclusion was implemented by adding a site-level flag in the analysis dataset rather than documenting a protocol deviation for each patient. That matters because the clinical study report draft still describes the safety population as all randomized patients who received at least one dose. I asked the lead programmer, Teo March, whether the population definition would be updated, and he said the sponsor did not want "a footnote that invites questions."
+
+The sites were not random outliers. Site 014 enrolled 42 patients, Site 022 enrolled 37, and Site 031 enrolled 31. Their adverse-event rates were high, but their missing-source-document rates were similar to Site 018 and Site 027, which stayed in the analysis. I can provide the query aging report, the SAS diff, and the email chain where the exclusion language was negotiated.

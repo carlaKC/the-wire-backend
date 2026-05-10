@@ -1,0 +1,13 @@
+TIP 9: Dairy processor falsified wastewater readings
+CHANNEL: postal mail transcribed
+RECEIVED: 02 May 2026
+
+I am a former quality technician at Fairbank Dairy Processing in Wexler County. The plant reports daily biochemical oxygen demand readings to the county wastewater authority. From April 2025 through January 2026, the readings submitted to the county did not match the meter values in our lab notebook.
+
+Plant manager Roberta Keane instructed the quality team to enter capped values no higher than 290 mg/L because the permit threshold is 300 mg/L. The actual readings exceeded 420 mg/L on at least fourteen days, including 03 July 2025, 19 August 2025, and 04 November 2025.
+
+I have photocopies of the lab notebook pages and screenshots from the county reporting portal. The discharge goes to the North Fork treatment system, which had odor complaints from nearby residents during the same summer.
+
+The falsification process was informal but consistent. The lab instrument printed a daily strip with the actual reading, and the quality technician copied that value into the bound notebook. Before noon, Keane or assistant manager Dale Firth would review the page and tell us what number to enter in the county portal. On high days, the portal number was usually between 276 and 294 mg/L regardless of the instrument printout.
+
+I kept copies for three months because I was the person whose login was used on several portal entries. On 05 December 2025 I asked Keane to enter the number herself if she wanted it changed. After that, my access to the county portal was removed, but I was still asked to run the instrument. The notebook, instrument strips, and portal screenshots can be matched by date.

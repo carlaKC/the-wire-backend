@@ -1,0 +1,13 @@
+TIP 2: DealDesk pressure to backdate starts at Pelham
+CHANNEL: secure drop
+RECEIVED: 05 May 2026
+
+I work in DealDesk at Pelham Analytics. During the final week of Q1 and Q2 2026, sales leadership pushed us to add early-start language to enterprise contracts after commercial terms had already been agreed.
+
+For Northstar Foods, VP Sales Kellan Rusk posted in the DealDesk Slack channel on 30 March 2026: "Need start date inside Q1 or finance won't count it." The customer did not countersign until 04 April. For Cadence Mutual, the redline history shows the start date changed from 01 July to 29 June on the morning of 30 June.
+
+I have the Ironclad redlines, the DealDesk Slack export, and the approval workflow showing CFO Grant Ellery approved both exceptions. I am not on the accounting team, but the requests were explicitly about quarter revenue treatment.
+
+The same pattern showed up in smaller deals too. In the final two days of Q2, DealDesk received a spreadsheet titled `Q2 saves` with eight opportunities marked "start date help needed." The spreadsheet came from Rusk's operations manager and listed expected revenue contribution next to each account. Three of those accounts had legal comments saying the customer would not sign until July.
+
+I pushed back once because DealDesk is supposed to document commercial terms, not solve accounting shortfalls. My manager told me the language had been approved by finance and legal, and that my job was to route the exception cleanly. I can provide the Slack export and the Ironclad version history showing when the start-date language was inserted.

@@ -1,0 +1,13 @@
+TIP 5: Procedural report of serious conduct
+CHANNEL: encrypted email
+RECEIVED: 05 May 2026
+
+Subject: Review request for Meridian Hospice billing records
+
+I am a coding auditor at Meridian Hospice. I reviewed claims submitted between 01 October 2025 and 31 December 2025 for the Cleveland service area. The review identified 46 claims where general inpatient hospice care was billed although the nursing notes documented routine home care.
+
+The claims were approved by Regional Billing Manager Daria Kline. The affected claim IDs are listed in spreadsheet `CLE-GIP-Q4-review.xlsx`; the total reimbursement difference is $128,440. I raised the issue to Compliance Officer Harlan Cho on 22 January 2026 and received no substantive response.
+
+Available records include the claim list, nursing notes, billing approvals, and my email to compliance. I am requesting external review because the claims remain submitted.
+
+This report is limited to the Cleveland service area because that is the queue I audited. I have not reviewed other regions and do not know whether the pattern exists elsewhere. The relevant records can be checked by comparing the level-of-care field in the submitted claim to the nursing note for the same service date.

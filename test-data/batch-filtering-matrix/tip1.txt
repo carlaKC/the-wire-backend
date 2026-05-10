@@ -1,0 +1,13 @@
+TIP 1: Payroll time edits at Harborline Logistics
+CHANNEL: secure drop
+RECEIVED: 06 May 2026
+
+I am a senior payroll analyst at Harborline Logistics, working in the Edison, New Jersey distribution hub. This submission concerns overtime-hour adjustments made before weekly payroll runs between 05 January 2026 and 23 March 2026.
+
+The Kronos export showed 1,842 overtime hours for hourly warehouse staff during that period. The final ADP payroll files paid 1,326 overtime hours. Payroll Director Lenora Pike approved manual edits to 74 employee timecards under adjustment code `SUP-MGR-CORR`. The edits removed meal-period overruns and post-shift loading time from the paid total.
+
+I have the Kronos audit report, the ADP import files, and Pike's 12 February 2026 email instructing supervisors to "clear avoidable overtime before payroll close." The estimated underpayment for the quarter is $18,940. I am still employed and request confidential handling.
+
+The edits were not payroll corrections for missed punches. In several examples, the employees had both badge-in and badge-out records, dock assignment logs, and supervisor shift notes confirming they stayed late. The manager correction simply reduced the paid time to the scheduled shift length. The same pattern appears across outbound, returns, and cold-chain loading teams.
+
+I raised the discrepancy to Pike on 28 March 2026 during payroll close. She said operations had already approved the hours and that payroll should "avoid reopening settled weeks." I did not escalate internally after that because my access to the audit export depends on Pike's approval. I can provide a redacted spreadsheet showing employee ID, original punch, adjusted punch, approver, and pay-period impact.

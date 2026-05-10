@@ -1,0 +1,13 @@
+TIP 3: Account executive asked to make quarter-end math work
+CHANNEL: intake form
+RECEIVED: 06 May 2026
+
+I left Pelham Analytics in April 2026 after refusing to keep pushing contract language I thought was misleading. I was the account executive on the Northstar Foods renewal.
+
+Northstar agreed to pricing on 27 March 2026 but told us procurement could not sign until the following week. On 30 March, VP Sales Kellan Rusk told me by phone that "Grant needs this in Q1" and instructed me to accept an early-start clause even though implementation would not begin until 08 April. The final countersignature came on 04 April.
+
+I retained my call notes, the customer email from Northstar procurement, and the final order form. I do not know how finance booked the deal, but the pressure was specifically to make the quarter's math work before the earnings call.
+
+Northstar's procurement manager, Ellie Baird, was explicit that their approval committee would not meet until 02 April. I forwarded that email to Rusk and asked whether we should forecast the renewal for Q2. He called me instead of replying in writing and said the CFO was "personally watching" the deal. After the call, Rusk sent a one-line Slack message: "Use the early start, paper follows."
+
+I left because this was becoming normal. The same instruction came up on a smaller contract with FleetRiver Manufacturing, though that one closed before quarter end. I cannot prove the accounting entry from my sales records alone, but my records show the customer did not commit by 31 March and management still pushed contract language designed to place the deal inside Q1.

@@ -1,0 +1,13 @@
+TIP 6: University lab retaliation after Title IX report
+CHANNEL: intake form
+RECEIVED: 03 May 2026
+
+I was a postdoctoral researcher in Professor Daniel Kreel's neuroimaging lab at Merrow State University. I filed a Title IX report on 08 August 2025 after Kreel repeatedly made sexual comments during late-night scan sessions and touched my lower back while I was seated at the console.
+
+The Title IX office interviewed me once, then did nothing visible for four months. On 17 December 2025 the department chair, Dr. Nisha Baer, told me my appointment would not be renewed because I was "not aligned with the lab culture." Kreel remained principal investigator on NIH grant R01-MH-77104.
+
+I have the Title IX intake email, my calendar entry for the interview with investigator Celeste Nam, and Slack messages from two graduate students saying Kreel had acted similarly toward them. I can provide the messages if names are protected.
+
+The retaliation was gradual before the non-renewal. In September 2025, I was removed from the abstract for the Society for Neuroscience submission even though I had run the preprocessing pipeline and drafted the methods section. In October, Kreel reassigned my scanner time to a first-year graduate student and told the lab manager I had become "difficult to schedule." The scanner calendar and manuscript revision history show these changes.
+
+When I asked Title IX for a status update on 03 November, Nam replied that the office was "still assessing scope." No one interviewed the two graduate students whose names I provided. I am not asking anyone to decide the case from this email. I am asking that the university's handling be examined because the complaint appears to have sat idle while the person I reported kept control over my funding and appointment.

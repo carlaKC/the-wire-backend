@@ -1,0 +1,13 @@
+TIP 3: Wage theft at Harborline as part of an organizing record
+CHANNEL: encrypted email
+RECEIVED: 08 May 2026
+
+I am a former HR generalist at Harborline Logistics. I am documenting the Edison hub's overtime edits because wage theft is one piece of a broader campaign our worker-justice committee is building against logistics employers that depend on precarious labor.
+
+The underlying records are specific. Between January and March 2026, Payroll Director Lenora Pike and Operations Manager Caleb Orr used Kronos manager corrections to reduce overtime before ADP payroll submission. I reviewed a spreadsheet on 25 March 2026 listing at least 61 affected employees and approximately $16,000 in unpaid overtime.
+
+Our committee intends to use this case to show how private logistics firms externalize labor costs while presenting themselves as efficient. I can provide the March spreadsheet, my exit memo to HR, and the Slack thread where I asked Pike why wage adjustments were being coded as supervisor corrections.
+
+I recognize that my framing is part of a political project. I am not pretending otherwise. The committee has been collecting examples from warehouses, delivery contractors, and temp agencies because we believe wage theft is structural, not accidental. Harborline is useful because the records are unusually clean and show how a respectable company can make underpayment look like routine timekeeping.
+
+The facts should stand apart from my politics. The Kronos correction codes, the ADP payroll totals, and the manager approvals can be tested without accepting my broader view of logistics work. I am including the broader view because it is why I am willing to risk submitting this, not because the records need it to be true.

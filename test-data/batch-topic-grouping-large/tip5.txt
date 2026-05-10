@@ -1,0 +1,13 @@
+TIP 5: Night discharge from solvent recovery plant
+CHANNEL: secure drop
+RECEIVED: 05 May 2026
+
+I worked the third shift at Meryn Solvent Recovery in Dayton from 2022 until I quit in January 2026. Beginning in late 2023, supervisors told us to bypass Tank 4B on weekend nights when the carbon filters were saturated.
+
+The bypass line sends untreated rinse water into the storm drain behind Bay C. I personally opened the valve on 19 October 2024 and 16 November 2024 after shift supervisor Paul Henley told me to "keep the tote count clean." The water had a strong acetone smell and a visible sheen.
+
+I have photos of the bypass hose, a copy of the September 2024 filter replacement log showing no replacement despite 312 operating hours, and the waste-hauler manifests showing lower pickups during the same period. The storm drain leads to Little Stillwater Creek.
+
+The pattern was easiest to see during production surges. When the plant processed more than 18 totes in a shift, Tank 4B filled before the hauler's scheduled pickup. Instead of slowing the line, Henley or maintenance lead Chris Danner would connect the green hose from the service corridor to the floor drain behind Bay C. The hose was stored in a locked cabinet marked "winter salt line," which made no sense inside the solvent building.
+
+I reported the smell once to environmental coordinator Mara Voss in December 2024. She told me the storm drain was "not my lane" and that weekend crews should not make written maintenance tickets unless equipment was damaged. I am not in a dispute with Meryn and left for a day-shift job elsewhere. I kept the photos because I worried someone would eventually get blamed without the records showing who ordered the bypass.

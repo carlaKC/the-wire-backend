@@ -1,0 +1,11 @@
+TIP 7: Non-ideological report of inventory diversion
+CHANNEL: secure drop
+RECEIVED: 07 May 2026
+
+I am a materials coordinator at Stonebridge Public Hospital. This report concerns missing orthopedic implants from the central supply room between 06 January 2026 and 28 February 2026.
+
+Inventory logs show 38 Stryker tibial baseplates removed under manual override codes. The corresponding surgeries account for 24 units. Supply supervisor Nolan Crewe approved the overrides and signed the weekly reconciliation reports. The unexplained difference is 14 units, with an inventory value of $96,600.
+
+I have the Lawson inventory export, the surgical case list, and the reconciliation reports. I am submitting this because the records should be reviewed by someone outside the supply chain department.
+
+I have not accused any particular person of taking the implants because I did not see a removal outside the system. The reason Crewe matters is that his approval appears on the override records and the weekly reconciliations. The discrepancy may have an explanation, but the same department that approved the overrides should not be the only department reviewing it.
