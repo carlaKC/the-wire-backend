@@ -23,12 +23,36 @@ Heuristics:
 1. consistency (signal: positive)
    Definition:
    Assess whether the document is internally coherent and free from obvious factual contradictions or impossible timelines.
+   When scoring, actively check for ALL of the following categories of inconsistency before assigning a score:
+
+   (a) TEMPORAL contradictions: events attributed to a role or period that precede or follow the stated dates for that role or period.
+       Example: a contract described as "one of his first acts" in a role he did not assume until two months after the contract was signed.
+
+   (b) NUMERICAL contradictions: totals, sums, or aggregate figures that are arithmetically incompatible with the itemized figures given.
+       Example: four itemized contracts summing to $5.5M described as the largest subset of a seven-contract total of $4.8M.
+
+   (c) ROLE / ACCESS ambiguities: a source claiming direct first-hand presence at events (e.g., executive meetings) that are implausible given their stated role, without explanation.
+       Example: a clinical data analyst claiming to have been personally present in an Executive Risk Committee meeting attended only by the CEO, CMO, and General Counsel.
+       This does not require a hard contradiction — an unresolved, meaningful question about how the source had access is sufficient for a medium score.
+
+   (d) INTERNAL FACTUAL contradictions within the same narrative: two claims in the same document that cannot both be true as stated.
+       Example: "I was alone with him in that hallway. There was no one else there" followed by naming two colleagues who saw the same event.
+
+   (e) EVIDENCE / SOURCING contradictions: a source's characterization of evidence that is inconsistent with the description of how that evidence was obtained.
+       Example: claiming to have "audio recordings" of a conversation, then describing that the only record of that conversation is handwritten notes taken while overhearing it through a wall.
+
+   (f) ENTITY NAME inconsistencies: the same organization referred to by two different names within the same document (e.g., "Bramwell Strategic Group" vs. "Bramwell Strategy Group"), which may indicate a typo, rebrand, or factual error worth flagging.
+
+   Apply these checks systematically. Do not stop after confirming that the chronological sequence of events is plausible — also verify arithmetic, role plausibility, witness consistency, evidence characterization, and entity naming.
 
 Scoring guidance:
 
 * high: narrative is internally consistent with no meaningful contradictions
 * medium: minor ambiguities or unclear chronology, but largely coherent
 * low: major contradictions, impossible sequences, or conflicting claims
+
+   Note: a document can have a plausible overall narrative and still score low or medium on consistency if it contains specific internal contradictions of the types listed above. Plausibility of the general story does not override concrete internal inconsistencies.
+   Note: categories (a), (b), (d), (e), and (f) each individually constitute grounds for a low score if the contradiction is clear and material. Category (c) alone (role/access ambiguity without hard contradiction) is grounds for a medium score.
 
 2. references (signal: positive)
    Definition:
