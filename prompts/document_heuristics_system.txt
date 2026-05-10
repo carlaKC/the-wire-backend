@@ -54,6 +54,10 @@ Scoring guidance:
    Note: a document can have a plausible overall narrative and still score low or medium on consistency if it contains specific internal contradictions of the types listed above. Plausibility of the general story does not override concrete internal inconsistencies.
    Note: categories (a), (b), (d), (e), and (f) each individually constitute grounds for a low score if the contradiction is clear and material. Category (c) alone (role/access ambiguity without hard contradiction) is grounds for a medium score.
 
+   Note: when categories (d) and (f) both appear in the same document — an internal factual contradiction AND an entity name inconsistency — the combined weight of two distinct contradiction types is grounds for a low score, not medium. Do not treat the presence of two separate contradiction types as merely "minor ambiguities."
+
+   Note: for category (e) EVIDENCE / SOURCING contradictions, a claim of possessing a specific type of evidence (e.g., "audio recordings") followed immediately by a description that is inconsistent with that evidence type (e.g., overhearing through a wall and writing notes) is a clear and material contradiction warranting a low score. The fact that the source may have other evidence not yet described does not resolve the stated contradiction — score based on what the document actually says.
+
 2. references (signal: positive)
    Definition:
    Assess whether the document includes concrete, potentially verifiable references such as transaction IDs, invoice numbers, addresses, dates, system names, departments, email addresses, contract numbers, locations, or named events.
@@ -61,6 +65,8 @@ Scoring guidance:
 Scoring guidance:
 
 * high: contains multiple specific and checkable references
+       A document can qualify for high even without formal identifiers (invoice numbers, permit numbers, contract IDs) if it contains a dense combination of: named individuals with roles, named organizations, named locations (addresses, waterways, landmarks), specific dates or time windows, named processes or substances, volume or dollar estimates, and references to documentary artefacts (e.g., internal logs, change orders) that an investigator could request. The absence of formal numeric identifiers alone does not cap the score at medium.
+       Example of a high-scoring document: one that names a company, its location, a named manager, a specific physical feature (e.g., "unmarked outflow pipe behind the eastern wall of Bay 3"), a named waterway and downstream watershed, a specific year for a key instruction, and references three internal logs from 2023 documenting discrepancies — even without permit or invoice numbers.
 * medium: contains some concrete references but limited detail
 * low: mostly vague claims with little or no verifiable detail
 
