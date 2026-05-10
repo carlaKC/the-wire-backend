@@ -59,12 +59,12 @@ type classifiedDocument struct {
 }
 
 type classifiedTopic struct {
-	ID          int                  `json:"id,omitempty"`
-	Title       string               `json:"title,omitempty"`
-	Description string               `json:"description,omitempty"`
-	Topic       string               `json:"topic"`
-	Confidence  float64              `json:"confidence"`
-	Importance  classifiedImportance `json:"importance,omitempty"`
+	ID          int              `json:"id,omitempty"`
+	Title       string           `json:"title,omitempty"`
+	Description string           `json:"description,omitempty"`
+	Topic       string           `json:"topic"`
+	Confidence  float64          `json:"confidence"`
+	Impact      classifiedImpact `json:"impact,omitempty"`
 }
 
 type topicCandidate struct {
@@ -79,7 +79,7 @@ type classifiedSensitivity struct {
 	Confidence float64 `json:"confidence"`
 }
 
-type classifiedImportance struct {
+type classifiedImpact struct {
 	Score       string `json:"score"`
 	Explanation string `json:"explanation"`
 }

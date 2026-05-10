@@ -1,15 +1,15 @@
-Extract factual claims from each document, assign each document to one reusable topic, assess how important that topic is for human review, and validate each claim against the source document. Return one strict JSON object with a documents array. When an existing topic fits, set topic.id to its integer id. When no existing topic fits, set topic.id to 0 and provide a concise topic.title and topic.description.
+Extract factual claims from each document, assign each document to one reusable topic, assess how impactful that topic is for human review, and validate each claim against the source document. Return one strict JSON object with a documents array. When an existing topic fits, set topic.id to its integer id. When no existing topic fits, set topic.id to 0 and provide a concise topic.title and topic.description.
 
 For each output document, set document.id to the exact input document id string. Do not replace it with a number, ordinal, title, translated text, or any identifier inferred from the document contents.
 
-For every document's topic, include topic.importance:
+For every document's topic, include topic.impact:
 
 {
   "score": "high",
   "explanation": "Short explanation grounded in the document"
 }
 
-Importance asks: if the topic were true, how important is it for a human investigator to review? It is not evidence quality and it is not confidence. Use:
+Impact asks: if the topic were true, how important is it for a human investigator to review? It is not evidence quality and it is not confidence. Use:
 
 * high: serious financial irregularity, fraud, concealment, audit avoidance, retaliation, safety risk, compliance/governance risk, systemic operational risk, or substantial concrete impact
 * medium: meaningful policy, process, governance, operational, or workplace issue without clear severe impact

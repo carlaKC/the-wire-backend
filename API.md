@@ -133,7 +133,7 @@ Cases are stored in process memory. Restarting the server clears previously crea
 - The server sends existing global topics to the classifier. The classifier assigns each document to an existing topic when one fits, or returns a new topic title/description when no existing topic fits.
 - Topic IDs are assigned by the server and are reusable across cases.
 - The original submitted filename/content is preserved in document responses.
-- Topic `triage` on case endpoints is based on LLM-assessed topic importance gated by evidence quality. If an older model response omits topic importance, the server falls back to the highest sensitivity seen for that topic in that case: level 1 -> `low`, level 2 -> `medium`, levels 3-4 -> `high`.
+- Topic `triage` on case endpoints is based on LLM-assessed topic impact gated by evidence quality. If an older model response omits topic impact, the server falls back to the highest sensitivity seen for that topic in that case: level 1 -> `low`, level 2 -> `medium`, levels 3-4 -> `high`.
 - Topic `description` includes the topic summary plus a short triage note.
 - Document IDs are assigned by the server for each case.
 - Group heuristics are attached to the topic detail for the same case/topic. The server excludes `filtered` documents before building the group scan input.
@@ -190,13 +190,13 @@ Case summary — the topics the service inferred for this dump.
       "id": 1,
       "title": "Procurement",
       "triage": "high",
-      "description": "The memo discusses vendor approval gaps. Triage: high because importance is high and evidence quality is medium."
+      "description": "The memo discusses vendor approval gaps. Triage: high because impact is high and evidence quality is medium."
     },
     {
       "id": 2,
       "title": "Communications Messaging",
       "triage": "medium",
-      "description": "The email discusses moving conversations off email. Triage: medium because importance is medium and evidence quality is medium."
+      "description": "The email discusses moving conversations off email. Triage: medium because impact is medium and evidence quality is medium."
     }
   ]
 }
@@ -226,10 +226,10 @@ Topic detail with topic-level heuristics for this case. The `topic.id` is a glob
     "id": 1,
     "title": "Procurement",
     "triage": "high",
-    "description": "The memo discusses vendor approval gaps. Triage: high because importance is high and evidence quality is medium.",
+    "description": "The memo discusses vendor approval gaps. Triage: high because impact is high and evidence quality is medium.",
     "document_count": 1,
     "heuristics": [
-      { "name": "importance", "rating": "high", "description": "Importance: The topic involves payment irregularities and alleged concealment from audit. Evidence quality is medium." },
+      { "name": "impact", "rating": "high", "description": "Impact: The topic involves payment irregularities and alleged concealment from audit. Evidence quality is medium." },
       { "name": "evidence_quality", "rating": "medium", "description": "Evidence quality used to gate final topic triage." },
       { "name": "sensitivity", "rating": "high", "description": "Rated high because the topic includes highly sensitive material." },
       { "name": "claims", "rating": "medium", "description": "Rated medium because the topic contains some extracted factual claims." },
