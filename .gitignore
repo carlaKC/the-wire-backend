@@ -1,2 +1,4 @@
 backend
+promptcorpus
 .claude
+*.diff
