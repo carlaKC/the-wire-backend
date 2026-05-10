@@ -308,23 +308,26 @@ func (s *classifiedCaseStore) updateGlobalTopicStatsLocked(topic *globalTopic, d
 }
 
 func topicHeuristics(claimCount, maxSensitivity int, statuses map[string]int, docTypes map[string]int) []heuristic {
+	sensitivityRating := triageFromSensitivity(maxSensitivity)
+	claimsRating := ratingFromClaimCount(claimCount)
 	out := []heuristic{
 		{
 			Name:        "sensitivity",
-			Rating:      triageFromSensitivity(maxSensitivity),
-			Description: "Highest sensitivity level in this topic is " + strconv.Itoa(maxSensitivity) + ".",
+			Rating:      sensitivityRating,
+			Description: sensitivityHeuristicDescription(sensitivityRating),
 		},
 		{
 			Name:        "claims",
-			Rating:      ratingFromClaimCount(claimCount),
-			Description: strconv.Itoa(claimCount) + " factual claim(s) extracted in this topic.",
+			Rating:      claimsRating,
+			Description: claimsHeuristicDescription(claimsRating),
 		},
 	}
 	if len(statuses) > 0 {
+		validationRating := ratingFromValidationMix(statuses)
 		out = append(out, heuristic{
 			Name:        "validation",
-			Rating:      ratingFromValidationMix(statuses),
-			Description: "Claim validation statuses: " + joinCounts(statuses) + ".",
+			Rating:      validationRating,
+			Description: validationHeuristicDescription(validationRating),
 		})
 	}
 	if len(docTypes) > 0 {
@@ -335,6 +338,39 @@ func topicHeuristics(claimCount, maxSensitivity int, statuses map[string]int, do
 		})
 	}
 	return out
+}
+
+func sensitivityHeuristicDescription(rating string) string {
+	switch rating {
+	case "high":
+		return "Rated high because the topic includes highly sensitive material."
+	case "medium":
+		return "Rated medium because the topic includes moderately sensitive material."
+	default:
+		return "Rated low because the topic does not exceed the low sensitivity band."
+	}
+}
+
+func claimsHeuristicDescription(rating string) string {
+	switch rating {
+	case "high":
+		return "Rated high because the topic contains many extracted factual claims."
+	case "medium":
+		return "Rated medium because the topic contains some extracted factual claims."
+	default:
+		return "Rated low because no factual claims were extracted for this topic."
+	}
+}
+
+func validationHeuristicDescription(rating string) string {
+	switch rating {
+	case "high":
+		return "Rated high because the extracted claims are supported by the source documents."
+	case "low":
+		return "Rated low because at least one extracted claim conflicts with the source document."
+	default:
+		return "Rated medium because one or more claims could not be clearly verified."
+	}
 }
 
 func topicTriage(topic *topicBuild, topicHeuristics []heuristic) triageRationale {

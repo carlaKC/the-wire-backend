@@ -274,6 +274,37 @@ func TestTopicTriageFallsBackToSensitivityWhenImportanceMissing(t *testing.T) {
 	}
 }
 
+func TestTopicHeuristicDescriptionsExplainRatings(t *testing.T) {
+	heuristics := topicHeuristics(41, 0, map[string]int{"unclear": 41}, nil)
+
+	validation := topicHeuristicByName(t, heuristics, "validation")
+	if validation.Rating != "medium" {
+		t.Fatalf("validation rating = %q, want medium", validation.Rating)
+	}
+	if strings.Contains(validation.Description, "unclear=41") {
+		t.Fatalf("validation description exposes raw status counts: %q", validation.Description)
+	}
+	if validation.Description != "Rated medium because one or more claims could not be clearly verified." {
+		t.Fatalf("validation description does not explain rating: %q", validation.Description)
+	}
+
+	sensitivity := topicHeuristicByName(t, heuristics, "sensitivity")
+	if sensitivity.Rating != "low" {
+		t.Fatalf("sensitivity rating = %q, want low", sensitivity.Rating)
+	}
+	if sensitivity.Description != "Rated low because the topic does not exceed the low sensitivity band." {
+		t.Fatalf("sensitivity description does not explain rating: %q", sensitivity.Description)
+	}
+
+	claims := topicHeuristicByName(t, heuristics, "claims")
+	if claims.Rating != "high" {
+		t.Fatalf("claims rating = %q, want high", claims.Rating)
+	}
+	if claims.Description != "Rated high because the topic contains many extracted factual claims." {
+		t.Fatalf("claims description does not explain rating: %q", claims.Description)
+	}
+}
+
 func TestEvidenceQualityTreatsContestedNarrativeAsCautionNotFilter(t *testing.T) {
 	documents := []documentResponse{
 		{Heuristics: []heuristic{
@@ -409,6 +440,17 @@ func TestShouldFilterDocumentIgnoresPositiveHeuristics(t *testing.T) {
 			}
 		})
 	}
+}
+
+func topicHeuristicByName(t *testing.T, heuristics []heuristic, name string) heuristic {
+	t.Helper()
+	for _, h := range heuristics {
+		if h.Name == name {
+			return h
+		}
+	}
+	t.Fatalf("missing topic heuristic %q in %#v", name, heuristics)
+	return heuristic{}
 }
 
 func classificationsFromHeuristics(byID map[string][]heuristic) map[string]documentClassification {

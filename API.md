@@ -231,8 +231,8 @@ Topic detail with topic-level heuristics for this case. The `topic.id` is a glob
     "heuristics": [
       { "name": "importance", "rating": "high", "description": "Importance: The topic involves payment irregularities and alleged concealment from audit. Evidence quality is medium." },
       { "name": "evidence_quality", "rating": "medium", "description": "Evidence quality used to gate final topic triage." },
-      { "name": "sensitivity", "rating": "high", "description": "Highest sensitivity level in this topic is 3." },
-      { "name": "claims", "rating": "medium", "description": "1 factual claim(s) extracted in this topic." },
+      { "name": "sensitivity", "rating": "high", "description": "Rated high because the topic includes highly sensitive material." },
+      { "name": "claims", "rating": "medium", "description": "Rated medium because the topic contains some extracted factual claims." },
       { "name": "corroboration", "rating": "high", "description": "Multiple documents describe the same vendor payments with consistent details." },
       { "name": "coordinated_framing", "rating": "low", "description": "The documents use restrained, independent factual framing." }
     ]
