@@ -1,0 +1,19 @@
+TIP 2: Revenue recognition and capex irregularities, Tal al-Zaytoun
+CHANNEL: encrypted email
+RECEIVED: 18 October 2025
+
+I am submitting this anonymously. I am a senior auditor at a Big Four firm and have done preparatory diligence work on the Tal al-Zaytoun project for two separate prospective investors over the past 18 months. I am breaching client confidentiality in writing this and I will not identify myself or my firm.
+
+The pattern that has emerged from both engagements concerns the project's revenue recognition and capital expenditure reporting. There appear to be material discrepancies between the figures presented to investors in confidential information memoranda and the figures that would be supported by an independent reconstruction of the project's books from underlying transaction data.
+
+Specifically:
+
+(1) Construction-in-progress is reported on the project's internal financials at a value approximately 14–18% above what would be supported by an arm's-length valuation of completed and partially completed assets. The over-reporting concentrates in three building phases handled by contractors I will not name in this submission.
+
+(2) Pre-sale residential revenue is being recognized in periods inconsistent with the underlying customer contracts. Specifically, deposits received under reservation agreements that contain refund clauses are being recognized as revenue, which under IFRS 15 they should not be.
+
+(3) Land valuation: there are inconsistencies between the values at which land parcels were acquired (per registry filings) and the values at which the same parcels are carried on the project's balance sheet. The differential, in aggregate, is approximately $11 million favorable to the project.
+
+The cumulative effect is that the project is presented to investors as more capital-efficient and more cash-positive than its underlying operations support. This is a securities concern (for the Gulf investors), a tax concern (for the PA), and an audit concern (for whichever firm is signing the project's accounts).
+
+I do not know the names of the individuals responsible. The pattern is established at the level of accounting policy and approval workflow. The CEO and CFO would necessarily be aware. I am submitting this because the pattern is unlikely to be visible from outside the audit context but is straightforward to confirm with appropriate access.
