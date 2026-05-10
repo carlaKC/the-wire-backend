@@ -65,35 +65,67 @@ func (s *mapleServer) createCaseHandler(w http.ResponseWriter, r *http.Request) 
 //   - classifyGroups runs one group-heuristics prompt for each topic with at
 //     least two unfiltered documents.
 //
+// classifyCase and classifyDocuments run in parallel. classifyGroups starts
+// only after both complete, because it needs topic assignments and
+// per-document filter decisions.
+//
 // A failure in any stage marks the whole case failed; only when all stages
 // succeed does the classification report get committed.
 func (s *mapleServer) processCase(caseID int, createdAt time.Time, documents []classifiedInput) {
-	ctx := context.Background()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 	start := time.Now()
 
+	type caseResult struct {
+		report classificationReport
+		err    error
+	}
+	type documentResult struct {
+		heuristicsByDoc map[string][]heuristic
+		err             error
+	}
+
+	caseDone := make(chan caseResult, 1)
+	documentDone := make(chan documentResult, 1)
+
+	go func() {
+		stageStart := time.Now()
+		log.Printf("case %d: classifyCase started", caseID)
+		report, err := s.classifyCase(ctx, documents)
+		if err != nil {
+			log.Printf("case %d: classifyCase failed: %v", caseID, err)
+			cancel()
+			caseDone <- caseResult{err: err}
+			return
+		}
+		log.Printf("case %d: classifyCase completed in %s", caseID, time.Since(stageStart).Round(time.Millisecond))
+		caseDone <- caseResult{report: report}
+	}()
+
+	go func() {
+		stageStart := time.Now()
+		log.Printf("case %d: classifyDocuments started", caseID)
+		heuristicsByDoc, err := s.classifyDocuments(ctx, documents)
+		if err != nil {
+			log.Printf("case %d: classifyDocuments failed: %v", caseID, err)
+			cancel()
+			documentDone <- documentResult{err: err}
+			return
+		}
+		log.Printf("case %d: classifyDocuments completed in %s (%d documents)", caseID, time.Since(stageStart).Round(time.Millisecond), len(documents))
+		documentDone <- documentResult{heuristicsByDoc: heuristicsByDoc}
+	}()
+
+	caseStage := <-caseDone
+	documentStage := <-documentDone
+	if caseStage.err != nil || documentStage.err != nil {
+		s.store.markFailed(caseID)
+		return
+	}
+
 	stageStart := time.Now()
-	log.Printf("case %d: classifyCase started", caseID)
-	report, err := s.classifyCase(ctx, documents)
-	if err != nil {
-		log.Printf("case %d: classifyCase failed: %v", caseID, err)
-		s.store.markFailed(caseID)
-		return
-	}
-	log.Printf("case %d: classifyCase completed in %s", caseID, time.Since(stageStart).Round(time.Millisecond))
-
-	stageStart = time.Now()
-	log.Printf("case %d: classifyDocuments started", caseID)
-	heuristicsByDoc, err := s.classifyDocuments(ctx, documents)
-	if err != nil {
-		log.Printf("case %d: classifyDocuments failed: %v", caseID, err)
-		s.store.markFailed(caseID)
-		return
-	}
-	log.Printf("case %d: classifyDocuments completed in %s (%d documents)", caseID, time.Since(stageStart).Round(time.Millisecond), len(documents))
-
-	stageStart = time.Now()
 	log.Printf("case %d: classifyGroups started", caseID)
-	groupHeuristicsByKey, err := s.classifyGroups(ctx, documents, report, heuristicsByDoc)
+	groupHeuristicsByKey, err := s.classifyGroups(ctx, documents, caseStage.report, documentStage.heuristicsByDoc)
 	if err != nil {
 		log.Printf("case %d: classifyGroups failed: %v", caseID, err)
 		s.store.markFailed(caseID)
@@ -101,7 +133,7 @@ func (s *mapleServer) processCase(caseID int, createdAt time.Time, documents []c
 	}
 	log.Printf("case %d: classifyGroups completed in %s (%d groups)", caseID, time.Since(stageStart).Round(time.Millisecond), len(groupHeuristicsByKey))
 
-	s.store.replaceClassified(caseID, createdAt, documents, report, heuristicsByDoc, groupHeuristicsByKey)
+	s.store.replaceClassified(caseID, createdAt, documents, caseStage.report, documentStage.heuristicsByDoc, groupHeuristicsByKey)
 	log.Printf("case %d: complete (elapsed %s)", caseID, time.Since(start).Round(time.Millisecond))
 }
 

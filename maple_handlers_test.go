@@ -173,6 +173,79 @@ func TestProcessCaseAttachesPerDocumentHeuristics(t *testing.T) {
 	}
 }
 
+func TestProcessCaseRunsClassifyDocumentWhileClassifyCaseIsBlocked(t *testing.T) {
+	classifier := newControlledClassifier(classificationReport{Documents: []classifiedDocument{
+		classifiedDoc("memo.txt", classifiedTopic{
+			Title: "Procurement",
+			Topic: "procurement",
+		}),
+	}}, nil)
+	classifier.release = make(chan struct{})
+	classifier.documentCalls = make(chan classifiedInput, 1)
+	srv := newMapleServer(classifier)
+
+	caseID := postMapleCase(t, srv, []docInput{{Filename: "memo.txt", Content: "memo body"}})
+	<-classifier.calls
+
+	select {
+	case call := <-classifier.documentCalls:
+		if call.ID != "memo.txt" {
+			t.Fatalf("ClassifyDocument called with id %q, want memo.txt", call.ID)
+		}
+	case <-time.After(250 * time.Millisecond):
+		t.Fatal("ClassifyDocument did not start while Classify was blocked")
+	}
+
+	close(classifier.release)
+	waitMapleStatus(t, srv, caseID, statusComplete)
+}
+
+func TestProcessCaseStartsGroupScanOnlyAfterCaseAndDocumentStagesComplete(t *testing.T) {
+	classifier := newControlledClassifier(classificationReport{Documents: []classifiedDocument{
+		classifiedDoc("memo-1.txt", classifiedTopic{Title: "Procurement", Topic: "procurement"}),
+		classifiedDoc("memo-2.txt", classifiedTopic{Title: "Procurement", Topic: "procurement"}),
+	}}, nil)
+	classifier.release = make(chan struct{})
+	classifier.documentReleases = make(chan struct{})
+	classifier.documentCalls = make(chan classifiedInput, 2)
+	classifier.documentReport = []heuristic{
+		{Name: "emotive_language", Signal: "negative", Rating: "low"},
+		{Name: "ideology_or_incentives", Signal: "negative", Rating: "low"},
+	}
+	classifier.groupReport = []heuristic{{Name: "corroboration", Signal: "positive", Rating: "medium"}}
+	classifier.groupCalls = make(chan groupCall, 1)
+	srv := newMapleServer(classifier)
+
+	caseID := postMapleCase(t, srv, []docInput{
+		{Filename: "memo-1.txt", Content: "first memo"},
+		{Filename: "memo-2.txt", Content: "second memo"},
+	})
+	<-classifier.calls
+	for i := 0; i < 2; i++ {
+		select {
+		case <-classifier.documentCalls:
+		case <-time.After(250 * time.Millisecond):
+			t.Fatal("ClassifyDocument did not start for both documents")
+		}
+	}
+	assertNoGroupCall(t, classifier.groupCalls)
+
+	close(classifier.release)
+	assertNoGroupCall(t, classifier.groupCalls)
+
+	classifier.documentReleases <- struct{}{}
+	classifier.documentReleases <- struct{}{}
+	select {
+	case call := <-classifier.groupCalls:
+		if got := len(call.documents); got != 2 {
+			t.Fatalf("group call documents = %d, want 2", got)
+		}
+	case <-time.After(250 * time.Millisecond):
+		t.Fatal("ClassifyGroup did not start after case and document stages completed")
+	}
+	waitMapleStatus(t, srv, caseID, statusComplete)
+}
+
 func TestGetTopicDocumentsReturnsOnlyDocumentsForThatTopic(t *testing.T) {
 	classifier := newControlledClassifier(classificationReport{Documents: []classifiedDocument{
 		classifiedDoc("memo.txt", classifiedTopic{
@@ -451,6 +524,15 @@ func topicHeuristicNames(hs []topicHeuristic) []string {
 		out[i] = h.Name
 	}
 	return out
+}
+
+func assertNoGroupCall(t *testing.T, calls <-chan groupCall) {
+	t.Helper()
+	select {
+	case <-calls:
+		t.Fatal("ClassifyGroup was called before case and document stages completed")
+	case <-time.After(25 * time.Millisecond):
+	}
 }
 
 func TestMapleClassifierFailureMarksCaseFailed(t *testing.T) {

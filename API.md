@@ -100,7 +100,7 @@ Group heuristics are part of the open topic-level heuristic list. Clients should
 
 | Status | Meaning |
 |--------|---------|
-| `processing` | Analysis is in flight. The server first classifies documents into topics, then runs per-document heuristics and computes `filtered`, then runs group heuristics for each topic's unfiltered documents. `topics` is empty until the full case result is committed. Topic endpoints (`/topics/{tid}` and `/topics/{tid}/documents`) return `404 topic_not_found` until the result is committed. |
+| `processing` | Analysis is in flight. The server runs case classification and per-document heuristics in parallel, then computes `filtered`, then runs group heuristics for each topic's unfiltered documents. `topics` is empty until the full case result is committed. Topic endpoints (`/topics/{tid}` and `/topics/{tid}/documents`) return `404 topic_not_found` until the result is committed. |
 | `complete` | Analysis finished. All data populated. |
 | `failed` | Analysis errored. The case is terminal; further polling will not change the result. |
 
