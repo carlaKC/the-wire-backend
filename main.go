@@ -63,6 +63,7 @@ func registerMockHandlers(mux *http.ServeMux) {
 
 func main() {
 	nomock := flag.Bool("nomock", false, "use Maple-backed in-memory classification instead of hardcoded mock data")
+	useClaude := flag.Bool("claude", false, "use Anthropic Claude (ANTHROPIC_API_KEY) as the classification backend instead of Maple; implies live (non-mock) classification")
 	flag.Parse()
 
 	port := os.Getenv("PORT")
@@ -73,7 +74,27 @@ func main() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthcheck", healthHandler)
 
-	if *nomock {
+	switch {
+	case *useClaude:
+		timeout := claudeTimeoutFromEnv()
+		model := envOrDefault("CLAUDE_MODEL", defaultClaudeModel)
+		baseURL := envOrDefault("CLAUDE_BASE_URL", defaultClaudeBaseURL)
+		log.Printf("claude client: timeout=%s base_url=%s model=%s", timeout, baseURL, model)
+		client := claudeClient{
+			baseURL:   baseURL,
+			apiKey:    os.Getenv("ANTHROPIC_API_KEY"),
+			model:     model,
+			maxTokens: claudeMaxTokensFromEnv(),
+			httpClient: &http.Client{
+				Timeout: timeout,
+			},
+		}
+		classifier := mapleClassifier{
+			model:  model,
+			client: client,
+		}
+		registerMapleHandlers(mux, newMapleServer(classifier))
+	case *nomock:
 		timeout := mapleTimeoutFromEnv()
 		log.Printf("maple client: timeout=%s base_url=%s", timeout, envOrDefault("MAPLE_BASE_URL", defaultMapleBaseURL))
 		client := mapleClient{
@@ -88,12 +109,12 @@ func main() {
 			client: client,
 		}
 		registerMapleHandlers(mux, newMapleServer(classifier))
-	} else {
+	default:
 		registerMockHandlers(mux)
 	}
 
 	addr := ":" + port
-	log.Printf("listening on %s (nomock=%v)", addr, *nomock)
+	log.Printf("listening on %s (nomock=%v claude=%v)", addr, *nomock, *useClaude)
 	if err := http.ListenAndServe(addr, withCORS(mux)); err != nil {
 		log.Fatal(err)
 	}
