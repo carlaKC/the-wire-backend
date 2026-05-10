@@ -56,11 +56,12 @@ type topicDetailResponse struct {
 }
 
 type documentResponse struct {
-	ID         int         `json:"id"`
-	Filename   string      `json:"filename"`
-	Content    string      `json:"content"`
-	Filtered   bool        `json:"filtered"`
-	Heuristics []heuristic `json:"heuristics"`
+	ID            int         `json:"id"`
+	Filename      string      `json:"filename"`
+	Content       string      `json:"content"`
+	Filtered      bool        `json:"filtered"`
+	Heuristics    []heuristic `json:"heuristics"`
+	FactsToVerify []string    `json:"facts_to_verify"`
 }
 
 type topicDocumentsResponse struct {

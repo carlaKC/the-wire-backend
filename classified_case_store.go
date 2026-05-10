@@ -78,11 +78,11 @@ func (s *classifiedCaseStore) create(data caseData) int {
 	return id
 }
 
-func (s *classifiedCaseStore) replaceClassified(id int, createdAt time.Time, inputs []classifiedInput, report classificationReport, heuristicsByDoc map[string][]heuristic, groupHeuristicsByKey map[string][]heuristic) {
+func (s *classifiedCaseStore) replaceClassified(id int, createdAt time.Time, inputs []classifiedInput, report classificationReport, classificationsByDoc map[string]documentClassification, groupHeuristicsByKey map[string][]heuristic) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	data := s.buildCaseDataLocked(createdAt, inputs, report, heuristicsByDoc, groupHeuristicsByKey)
+	data := s.buildCaseDataLocked(createdAt, inputs, report, classificationsByDoc, groupHeuristicsByKey)
 	data.summary.CaseID = id
 	for topicID, detail := range data.details {
 		detail.CaseID = id
@@ -144,7 +144,7 @@ func emptyCaseData(createdAt time.Time, documentCount int) caseData {
 	}
 }
 
-func (s *classifiedCaseStore) buildCaseDataLocked(createdAt time.Time, inputs []classifiedInput, report classificationReport, heuristicsByDoc map[string][]heuristic, groupHeuristicsByKey map[string][]heuristic) caseData {
+func (s *classifiedCaseStore) buildCaseDataLocked(createdAt time.Time, inputs []classifiedInput, report classificationReport, classificationsByDoc map[string]documentClassification, groupHeuristicsByKey map[string][]heuristic) caseData {
 	inputByID := map[string]classifiedInput{}
 	for _, input := range inputs {
 		inputByID[input.ID] = input
@@ -192,12 +192,14 @@ func (s *classifiedCaseStore) buildCaseDataLocked(createdAt time.Time, inputs []
 		if filename == "" {
 			filename = classified.ID
 		}
+		docClassification := classificationsByDoc[classified.ID]
 		topic.documents = append(topic.documents, documentResponse{
-			ID:         nextDocumentID,
-			Filename:   filename,
-			Content:    input.Content,
-			Filtered:   shouldFilterDocument(heuristicsByDoc[classified.ID]),
-			Heuristics: heuristicsByDoc[classified.ID],
+			ID:            nextDocumentID,
+			Filename:      filename,
+			Content:       input.Content,
+			Filtered:      shouldFilterDocument(docClassification.Heuristics),
+			Heuristics:    docClassification.Heuristics,
+			FactsToVerify: docClassification.FactsToVerify,
 		})
 		nextDocumentID++
 	}

@@ -195,15 +195,15 @@ func TestMapleClassifierClassifyDocumentReturnsParsedHeuristics(t *testing.T) {
 	}
 	classifier := mapleClassifier{model: "doc-model", client: completer}
 
-	hs, err := classifier.ClassifyDocument(context.Background(), classifiedInput{
+	classification, err := classifier.ClassifyDocument(context.Background(), classifiedInput{
 		ID:      "memo.txt",
 		Content: "MEMO BODY HERE",
 	})
 	if err != nil {
 		t.Fatalf("ClassifyDocument returned error: %v", err)
 	}
-	if len(hs) != 4 {
-		t.Fatalf("heuristics = %d, want 4", len(hs))
+	if len(classification.Heuristics) != 4 {
+		t.Fatalf("heuristics = %d, want 4", len(classification.Heuristics))
 	}
 
 	if len(completer.requests) != 1 {
@@ -246,7 +246,7 @@ func TestMapleClassifierClassifyDocumentReturnsParsedHeuristics(t *testing.T) {
 		"emotive_language":       "negative",
 		"ideology": "negative",
 	}
-	for _, h := range hs {
+	for _, h := range classification.Heuristics {
 		if h.Rating != wantRating[h.Name] {
 			t.Errorf("%s rating = %q, want %q", h.Name, h.Rating, wantRating[h.Name])
 		}
@@ -283,12 +283,12 @@ func TestMapleClassifierClassifyDocumentRepairsInvalidJSON(t *testing.T) {
 	}
 	classifier := mapleClassifier{model: "doc-model", client: completer}
 
-	hs, err := classifier.ClassifyDocument(context.Background(), classifiedInput{Content: "x"})
+	classification, err := classifier.ClassifyDocument(context.Background(), classifiedInput{Content: "x"})
 	if err != nil {
 		t.Fatalf("ClassifyDocument returned error after repair: %v", err)
 	}
-	if len(hs) != 4 {
-		t.Errorf("heuristics = %d, want 4", len(hs))
+	if len(classification.Heuristics) != 4 {
+		t.Errorf("heuristics = %d, want 4", len(classification.Heuristics))
 	}
 	if len(completer.requests) != 2 {
 		t.Fatalf("requests = %d, want 2 (initial + repair)", len(completer.requests))
@@ -433,13 +433,14 @@ func TestBundleDocumentsForGroupScan(t *testing.T) {
 }
 
 func TestParseDocumentHeuristicsMapsFields(t *testing.T) {
-	hs, err := parseDocumentHeuristics(`{"heuristics":[
+	got, err := parseDocumentHeuristics(`{"heuristics":[
 		{"name":"consistency","signal":"positive","score":"high","explanation":"coherent"},
 		{"name":"references","signal":"positive","score":"low","explanation":"vague"}
 	]}`)
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
+	hs := got.Heuristics
 	if len(hs) != 2 {
 		t.Fatalf("heuristics = %d, want 2", len(hs))
 	}
@@ -448,6 +449,92 @@ func TestParseDocumentHeuristicsMapsFields(t *testing.T) {
 	}
 	if hs[1].Name != "references" || hs[1].Signal != "positive" || hs[1].Rating != "low" || hs[1].Description != "vague" {
 		t.Errorf("hs[1] = %#v", hs[1])
+	}
+	if len(got.FactsToVerify) != 0 {
+		t.Errorf("facts_to_verify = %d, want 0 when not in payload", len(got.FactsToVerify))
+	}
+}
+
+func TestParseDocumentHeuristicsExtractsFactsToVerify(t *testing.T) {
+	got, err := parseDocumentHeuristics(`{
+		"heuristics": [
+			{"name":"consistency","signal":"positive","score":"high","explanation":"coherent"}
+		],
+		"facts_to_verify": [
+			"Atlas Holdings was paid $147,500 on 2025-03-22 with no PO on file.",
+			"  ",
+			"Finance policy section 4.2 requires two-officer sign-off."
+		]
+	}`)
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	want := []string{
+		"Atlas Holdings was paid $147,500 on 2025-03-22 with no PO on file.",
+		"Finance policy section 4.2 requires two-officer sign-off.",
+	}
+	if len(got.FactsToVerify) != len(want) {
+		t.Fatalf("facts_to_verify = %d, want %d (blank entry dropped)", len(got.FactsToVerify), len(want))
+	}
+	for i, fact := range want {
+		if got.FactsToVerify[i] != fact {
+			t.Errorf("facts_to_verify[%d] = %q, want %q", i, got.FactsToVerify[i], fact)
+		}
+	}
+}
+
+func TestParseDocumentHeuristicsAcceptsWrappedFactObjects(t *testing.T) {
+	// Defensive against model output drift: even though the prompt asks for
+	// plain strings, occasional responses wrap each fact in an object. The
+	// parser should unwrap and discard the wrapper.
+	got, err := parseDocumentHeuristics(`{
+		"heuristics": [
+			{"name":"consistency","signal":"positive","score":"high","explanation":"coherent"}
+		],
+		"facts_to_verify": [
+			{"fact":"Wrapped under fact key."},
+			{"statement":"Wrapped under statement key."},
+			{"claim":"Wrapped under claim key."}
+		]
+	}`)
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	want := []string{
+		"Wrapped under fact key.",
+		"Wrapped under statement key.",
+		"Wrapped under claim key.",
+	}
+	if len(got.FactsToVerify) != len(want) {
+		t.Fatalf("facts_to_verify = %d, want %d", len(got.FactsToVerify), len(want))
+	}
+	for i, fact := range want {
+		if got.FactsToVerify[i] != fact {
+			t.Errorf("facts_to_verify[%d] = %q, want %q", i, got.FactsToVerify[i], fact)
+		}
+	}
+}
+
+func TestParseDocumentHeuristicsCapsFactsToVerify(t *testing.T) {
+	// The prompt asks for at most three facts; if the model overshoots, the
+	// parser truncates so clients can render without a defensive limit.
+	got, err := parseDocumentHeuristics(`{
+		"heuristics": [
+			{"name":"consistency","signal":"positive","score":"high","explanation":"coherent"}
+		],
+		"facts_to_verify": [
+			"Fact one.",
+			"Fact two.",
+			"Fact three.",
+			"Fact four (should be dropped).",
+			"Fact five (should be dropped)."
+		]
+	}`)
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	if len(got.FactsToVerify) != maxFactsToVerify {
+		t.Fatalf("facts_to_verify = %d, want %d", len(got.FactsToVerify), maxFactsToVerify)
 	}
 }
 
@@ -464,12 +551,12 @@ func TestParseDocumentHeuristicsRejectsEmptyHeuristics(t *testing.T) {
 }
 
 func TestParseDocumentHeuristicsTolerantOfMarkdownFences(t *testing.T) {
-	hs, err := parseDocumentHeuristics("```json\n" + `{"heuristics":[{"name":"consistency","signal":"positive","score":"high","explanation":"coherent"}]}` + "\n```")
+	got, err := parseDocumentHeuristics("```json\n" + `{"heuristics":[{"name":"consistency","signal":"positive","score":"high","explanation":"coherent"}]}` + "\n```")
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
-	if len(hs) != 1 || hs[0].Name != "consistency" {
-		t.Fatalf("hs = %#v", hs)
+	if len(got.Heuristics) != 1 || got.Heuristics[0].Name != "consistency" {
+		t.Fatalf("got = %#v", got)
 	}
 }
 

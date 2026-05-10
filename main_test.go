@@ -146,14 +146,14 @@ func TestReplaceClassifiedMarksDocumentFilteredWhenAllNegativeHeuristicsAreMediu
 		{ID: "bad.txt", Filename: "bad.txt", Content: "Bad file."},
 	}, classificationReport{Documents: []classifiedDocument{
 		classifiedDoc("bad.txt", classifiedTopic{Title: "Procurement", Topic: "procurement"}),
-	}}, map[string][]heuristic{
+	}}, classificationsFromHeuristics(map[string][]heuristic{
 		"bad.txt": {
 			{Name: "consistency", Signal: "positive", Rating: "low"},
 			{Name: "references", Signal: "positive", Rating: "low"},
 			{Name: "emotive_language", Signal: "negative", Rating: "medium"},
 			{Name: "ideology", Signal: "negative", Rating: "high"},
 		},
-	}, nil)
+	}), nil)
 
 	data, ok := store.get(caseID)
 	if !ok {
@@ -229,7 +229,7 @@ func TestTopicTriageUsesLLMImportanceAndEvidenceQuality(t *testing.T) {
 				{ID: "memo.txt", Filename: "memo.txt", Content: "Memo body."},
 			}, classificationReport{Documents: []classifiedDocument{
 				classifiedDoc("memo.txt", topic),
-			}}, map[string][]heuristic{"memo.txt": tt.heuristics}, nil)
+			}}, classificationsFromHeuristics(map[string][]heuristic{"memo.txt": tt.heuristics}), nil)
 
 			data, ok := store.get(caseID)
 			if !ok {
@@ -255,14 +255,14 @@ func TestTopicTriageFallsBackToSensitivityWhenImportanceMissing(t *testing.T) {
 
 	store.replaceClassified(caseID, createdAt, []classifiedInput{
 		{ID: "memo.txt", Filename: "memo.txt", Content: "Memo body."},
-	}, classificationReport{Documents: []classifiedDocument{doc}}, map[string][]heuristic{
+	}, classificationReport{Documents: []classifiedDocument{doc}}, classificationsFromHeuristics(map[string][]heuristic{
 		"memo.txt": {
 			{Name: "consistency", Signal: "positive", Rating: "high"},
 			{Name: "references", Signal: "positive", Rating: "high"},
 			{Name: "emotive_language", Signal: "negative", Rating: "low"},
 			{Name: "ideology", Signal: "negative", Rating: "low"},
 		},
-	}, nil)
+	}), nil)
 
 	data, ok := store.get(caseID)
 	if !ok {
@@ -409,6 +409,14 @@ func TestShouldFilterDocumentIgnoresPositiveHeuristics(t *testing.T) {
 			}
 		})
 	}
+}
+
+func classificationsFromHeuristics(byID map[string][]heuristic) map[string]documentClassification {
+	out := make(map[string]documentClassification, len(byID))
+	for id, hs := range byID {
+		out[id] = documentClassification{Heuristics: hs}
+	}
+	return out
 }
 
 func classifiedDoc(id string, topic classifiedTopic) classifiedDocument {

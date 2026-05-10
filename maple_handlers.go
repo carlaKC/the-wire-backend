@@ -81,8 +81,8 @@ func (s *mapleServer) processCase(caseID int, createdAt time.Time, documents []c
 		err    error
 	}
 	type documentResult struct {
-		heuristicsByDoc map[string][]heuristic
-		err             error
+		classificationsByDoc map[string]documentClassification
+		err                  error
 	}
 
 	caseDone := make(chan caseResult, 1)
@@ -105,7 +105,7 @@ func (s *mapleServer) processCase(caseID int, createdAt time.Time, documents []c
 	go func() {
 		stageStart := time.Now()
 		log.Printf("case %d: classifyDocuments started", caseID)
-		heuristicsByDoc, err := s.classifyDocuments(ctx, documents)
+		classificationsByDoc, err := s.classifyDocuments(ctx, documents)
 		if err != nil {
 			log.Printf("case %d: classifyDocuments failed: %v", caseID, err)
 			cancel()
@@ -113,7 +113,7 @@ func (s *mapleServer) processCase(caseID int, createdAt time.Time, documents []c
 			return
 		}
 		log.Printf("case %d: classifyDocuments completed in %s (%d documents)", caseID, time.Since(stageStart).Round(time.Millisecond), len(documents))
-		documentDone <- documentResult{heuristicsByDoc: heuristicsByDoc}
+		documentDone <- documentResult{classificationsByDoc: classificationsByDoc}
 	}()
 
 	caseStage := <-caseDone
@@ -125,7 +125,7 @@ func (s *mapleServer) processCase(caseID int, createdAt time.Time, documents []c
 
 	stageStart := time.Now()
 	log.Printf("case %d: classifyGroups started", caseID)
-	groupHeuristicsByKey, err := s.classifyGroups(ctx, documents, caseStage.report, documentStage.heuristicsByDoc)
+	groupHeuristicsByKey, err := s.classifyGroups(ctx, documents, caseStage.report, documentStage.classificationsByDoc)
 	if err != nil {
 		log.Printf("case %d: classifyGroups failed: %v", caseID, err)
 		s.store.markFailed(caseID)
@@ -133,7 +133,7 @@ func (s *mapleServer) processCase(caseID int, createdAt time.Time, documents []c
 	}
 	log.Printf("case %d: classifyGroups completed in %s (%d groups)", caseID, time.Since(stageStart).Round(time.Millisecond), len(groupHeuristicsByKey))
 
-	s.store.replaceClassified(caseID, createdAt, documents, caseStage.report, documentStage.heuristicsByDoc, groupHeuristicsByKey)
+	s.store.replaceClassified(caseID, createdAt, documents, caseStage.report, documentStage.classificationsByDoc, groupHeuristicsByKey)
 	log.Printf("case %d: complete (elapsed %s)", caseID, time.Since(start).Round(time.Millisecond))
 }
 
@@ -148,13 +148,13 @@ func (s *mapleServer) classifyCase(ctx context.Context, documents []classifiedIn
 // classifyDocuments fans out one ClassifyDocument call per document via the
 // classifier interface. Calls run concurrently, bounded by a semaphore. The
 // result map is keyed by classifiedInput.ID so the caller can attach each
-// document's heuristics to its wire response.
+// document's heuristics and facts-to-verify to its wire response.
 //
 // Per-document failures are collected and joined; any failure fails the
 // whole stage (and so the whole case). This matches our policy elsewhere:
 // document-level heuristics come from the model or not at all.
-func (s *mapleServer) classifyDocuments(ctx context.Context, documents []classifiedInput) (map[string][]heuristic, error) {
-	out := make(map[string][]heuristic, len(documents))
+func (s *mapleServer) classifyDocuments(ctx context.Context, documents []classifiedInput) (map[string]documentClassification, error) {
+	out := make(map[string]documentClassification, len(documents))
 	var (
 		wg   sync.WaitGroup
 		mu   sync.Mutex
@@ -176,7 +176,7 @@ func (s *mapleServer) classifyDocuments(ctx context.Context, documents []classif
 			}
 			defer func() { <-sem }()
 
-			hs, err := s.classifier.ClassifyDocument(ctx, d)
+			classification, err := s.classifier.ClassifyDocument(ctx, d)
 			if err != nil {
 				mu.Lock()
 				errs = append(errs, fmt.Errorf("doc %s: %w", d.ID, err))
@@ -184,7 +184,7 @@ func (s *mapleServer) classifyDocuments(ctx context.Context, documents []classif
 				return
 			}
 			mu.Lock()
-			out[d.ID] = hs
+			out[d.ID] = classification
 			mu.Unlock()
 		}(d)
 	}
@@ -199,7 +199,7 @@ func (s *mapleServer) classifyDocuments(ctx context.Context, documents []classif
 // classifyGroups runs one ClassifyGroup call per case/topic bucket after the
 // per-document filter decisions are known. Filtered documents are excluded; a
 // bucket with fewer than two remaining documents is skipped.
-func (s *mapleServer) classifyGroups(ctx context.Context, documents []classifiedInput, report classificationReport, heuristicsByDoc map[string][]heuristic) (map[string][]heuristic, error) {
+func (s *mapleServer) classifyGroups(ctx context.Context, documents []classifiedInput, report classificationReport, classificationsByDoc map[string]documentClassification) (map[string][]heuristic, error) {
 	inputByID := map[string]classifiedInput{}
 	for _, d := range documents {
 		inputByID[d.ID] = d
@@ -212,7 +212,7 @@ func (s *mapleServer) classifyGroups(ctx context.Context, documents []classified
 	groups := map[string]*groupBucket{}
 	for _, classified := range report.Documents {
 		input, ok := inputByID[classified.ID]
-		if !ok || shouldFilterDocument(heuristicsByDoc[classified.ID]) {
+		if !ok || shouldFilterDocument(classificationsByDoc[classified.ID].Heuristics) {
 			continue
 		}
 

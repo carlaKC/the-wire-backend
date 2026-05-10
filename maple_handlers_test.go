@@ -23,7 +23,7 @@ type controlledClassifier struct {
 	err              error
 	release          chan struct{}
 	calls            chan classifierCall
-	documentReport   []heuristic
+	documentReport   documentClassification
 	documentErr      error
 	documentReleases chan struct{}
 	documentCalls    chan classifiedInput
@@ -56,7 +56,7 @@ func (c *controlledClassifier) Classify(_ context.Context, documents []classifie
 	return c.report, c.err
 }
 
-func (c *controlledClassifier) ClassifyDocument(_ context.Context, document classifiedInput) ([]heuristic, error) {
+func (c *controlledClassifier) ClassifyDocument(_ context.Context, document classifiedInput) (documentClassification, error) {
 	if c.documentCalls != nil {
 		c.documentCalls <- document
 	}
@@ -145,11 +145,16 @@ func TestProcessCaseAttachesPerDocumentHeuristics(t *testing.T) {
 			Confidence:  0.95,
 		}),
 	}}, nil)
-	classifier.documentReport = []heuristic{
-		{Name: "consistency", Rating: "high", Description: "coherent timeline"},
-		{Name: "references", Rating: "medium", Description: "PO referenced"},
-		{Name: "emotive_language", Rating: "low", Description: "factual tone"},
-		{Name: "ideology", Rating: "low", Description: "no agenda"},
+	classifier.documentReport = documentClassification{
+		Heuristics: []heuristic{
+			{Name: "consistency", Rating: "high", Description: "coherent timeline"},
+			{Name: "references", Rating: "medium", Description: "PO referenced"},
+			{Name: "emotive_language", Rating: "low", Description: "factual tone"},
+			{Name: "ideology", Rating: "low", Description: "no agenda"},
+		},
+		FactsToVerify: []string{
+			"Vendor Atlas is named in the memo without a purchase order on file.",
+		},
 	}
 	srv := newMapleServer(classifier)
 
@@ -208,9 +213,11 @@ func TestProcessCaseStartsGroupScanOnlyAfterCaseAndDocumentStagesComplete(t *tes
 	classifier.release = make(chan struct{})
 	classifier.documentReleases = make(chan struct{})
 	classifier.documentCalls = make(chan classifiedInput, 2)
-	classifier.documentReport = []heuristic{
-		{Name: "emotive_language", Signal: "negative", Rating: "low"},
-		{Name: "ideology", Signal: "negative", Rating: "low"},
+	classifier.documentReport = documentClassification{
+		Heuristics: []heuristic{
+			{Name: "emotive_language", Signal: "negative", Rating: "low"},
+			{Name: "ideology", Signal: "negative", Rating: "low"},
+		},
 	}
 	classifier.groupReport = []heuristic{{Name: "corroboration", Signal: "positive", Rating: "medium"}}
 	classifier.groupCalls = make(chan groupCall, 1)
@@ -257,11 +264,13 @@ func TestGetTopicDocumentsReturnsOnlyDocumentsForThatTopic(t *testing.T) {
 			Topic: "finance",
 		}),
 	}}, nil)
-	classifier.documentReport = []heuristic{
-		{Name: "consistency", Signal: "positive", Rating: "high", Description: "coherent"},
-		{Name: "references", Signal: "positive", Rating: "medium", Description: "PO referenced"},
-		{Name: "emotive_language", Signal: "negative", Rating: "low", Description: "factual"},
-		{Name: "ideology", Signal: "negative", Rating: "low", Description: "no agenda"},
+	classifier.documentReport = documentClassification{
+		Heuristics: []heuristic{
+			{Name: "consistency", Signal: "positive", Rating: "high", Description: "coherent"},
+			{Name: "references", Signal: "positive", Rating: "medium", Description: "PO referenced"},
+			{Name: "emotive_language", Signal: "negative", Rating: "low", Description: "factual"},
+			{Name: "ideology", Signal: "negative", Rating: "low", Description: "no agenda"},
+		},
 	}
 	srv := newMapleServer(classifier)
 
@@ -357,11 +366,13 @@ func TestProcessCaseRunsGroupScanForUnfilteredDocuments(t *testing.T) {
 		classifiedDoc("memo-1.txt", classifiedTopic{Title: "Procurement", Topic: "procurement"}),
 		classifiedDoc("memo-2.txt", classifiedTopic{Title: "Procurement", Topic: "procurement"}),
 	}}, nil)
-	classifier.documentReport = []heuristic{
-		{Name: "consistency", Signal: "positive", Rating: "high"},
-		{Name: "references", Signal: "positive", Rating: "high"},
-		{Name: "emotive_language", Signal: "negative", Rating: "low"},
-		{Name: "ideology", Signal: "negative", Rating: "low"},
+	classifier.documentReport = documentClassification{
+		Heuristics: []heuristic{
+			{Name: "consistency", Signal: "positive", Rating: "high"},
+			{Name: "references", Signal: "positive", Rating: "high"},
+			{Name: "emotive_language", Signal: "negative", Rating: "low"},
+			{Name: "ideology", Signal: "negative", Rating: "low"},
+		},
 	}
 	classifier.groupReport = []heuristic{
 		{Name: "corroboration", Signal: "positive", Rating: "high", Description: "docs corroborate"},
@@ -492,16 +503,20 @@ func TestProcessCaseSkipsGroupScanWhenFewerThanTwoDocumentsRemain(t *testing.T) 
 type perDocumentControlledClassifier struct {
 	*controlledClassifier
 	reportsByID map[string][]heuristic
+	factsByID   map[string][]string
 }
 
-func (c *perDocumentControlledClassifier) ClassifyDocument(ctx context.Context, document classifiedInput) ([]heuristic, error) {
+func (c *perDocumentControlledClassifier) ClassifyDocument(ctx context.Context, document classifiedInput) (documentClassification, error) {
 	if c.documentCalls != nil {
 		c.documentCalls <- document
 	}
 	if c.documentErr != nil {
-		return nil, c.documentErr
+		return documentClassification{}, c.documentErr
 	}
-	return c.reportsByID[document.ID], nil
+	return documentClassification{
+		Heuristics:    c.reportsByID[document.ID],
+		FactsToVerify: c.factsByID[document.ID],
+	}, nil
 }
 
 func containsHeuristicNamed(hs []heuristic, name string) bool {

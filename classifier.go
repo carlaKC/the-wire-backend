@@ -13,7 +13,8 @@ import (
 //   - Classify runs the case-level pipeline: one model call across the full
 //     document set returning topic assignments and per-document metadata.
 //   - ClassifyDocument runs the per-document heuristics pipeline: one model
-//     call per document returning four fixed heuristics.
+//     call per document returning four fixed heuristics plus a list of
+//     externally verifiable facts extracted from the document.
 //   - ClassifyGroup runs the group heuristics pipeline: one model call for
 //     every topic group that has enough unfiltered documents to compare.
 //
@@ -21,8 +22,16 @@ import (
 // assignment and per-document filter decisions.
 type classifier interface {
 	Classify(ctx context.Context, documents []classifiedInput, existingTopics []topicCandidate) (classificationReport, error)
-	ClassifyDocument(ctx context.Context, document classifiedInput) ([]heuristic, error)
+	ClassifyDocument(ctx context.Context, document classifiedInput) (documentClassification, error)
 	ClassifyGroup(ctx context.Context, documents []classifiedInput, topicTitle string) ([]heuristic, error)
+}
+
+// documentClassification bundles the two outputs of the per-document
+// classification pass: the closed set of heuristics and a short list of
+// the most pertinent externally verifiable facts in the document.
+type documentClassification struct {
+	Heuristics    []heuristic
+	FactsToVerify []string
 }
 
 // classifiedInput is the trimmed document the classifier sees: a stable per-
@@ -166,8 +175,13 @@ func (s *flexibleString) UnmarshalJSON(data []byte) error {
 
 // heuristicsReport is the shape the document-heuristics prompt returns. Keep
 // the JSON tags in sync with prompts/document_heuristics_system.txt.
+//
+// FactsToVerify entries use llmFactToVerify because the prompt asks for plain
+// strings but model output drift sometimes wraps them as objects (with "fact"
+// or similar keys). The custom unmarshaler accepts both shapes.
 type heuristicsReport struct {
-	Heuristics []llmDocumentHeuristic `json:"heuristics"`
+	Heuristics    []llmDocumentHeuristic `json:"heuristics"`
+	FactsToVerify []llmFactToVerify      `json:"facts_to_verify"`
 }
 
 type llmDocumentHeuristic struct {
@@ -175,6 +189,38 @@ type llmDocumentHeuristic struct {
 	Signal      string `json:"signal"`
 	Score       string `json:"score"`
 	Explanation string `json:"explanation"`
+}
+
+// llmFactToVerify is a tolerant wrapper around the per-document fact strings.
+// The prompt asks for plain strings, but model output occasionally wraps each
+// fact in an object — UnmarshalJSON accepts either shape.
+type llmFactToVerify string
+
+func (f *llmFactToVerify) UnmarshalJSON(data []byte) error {
+	var text string
+	if err := json.Unmarshal(data, &text); err == nil {
+		*f = llmFactToVerify(text)
+		return nil
+	}
+	var wrapper struct {
+		Fact      string `json:"fact"`
+		Statement string `json:"statement"`
+		Claim     string `json:"claim"`
+	}
+	if err := json.Unmarshal(data, &wrapper); err != nil {
+		return err
+	}
+	switch {
+	case wrapper.Fact != "":
+		*f = llmFactToVerify(wrapper.Fact)
+	case wrapper.Statement != "":
+		*f = llmFactToVerify(wrapper.Statement)
+	case wrapper.Claim != "":
+		*f = llmFactToVerify(wrapper.Claim)
+	default:
+		*f = ""
+	}
+	return nil
 }
 
 type mapleClassifier struct {
@@ -222,30 +268,32 @@ func (c mapleClassifier) Classify(ctx context.Context, documents []classifiedInp
 }
 
 // ClassifyDocument runs the per-document heuristic prompt against a single
-// document. Same retry shape as Classify.
-func (c mapleClassifier) ClassifyDocument(ctx context.Context, document classifiedInput) ([]heuristic, error) {
+// document. Same retry shape as Classify. Returns both the closed set of
+// heuristics and the open list of facts the model thinks an investigator
+// could externally verify.
+func (c mapleClassifier) ClassifyDocument(ctx context.Context, document classifiedInput) (documentClassification, error) {
 	if c.client == nil {
-		return nil, errors.New("maple client is required")
+		return documentClassification{}, errors.New("maple client is required")
 	}
 
 	content, err := c.client.ChatCompletion(ctx, buildDocumentHeuristicsRequest(c.model, document.Content))
 	if err != nil {
-		return nil, err
+		return documentClassification{}, err
 	}
-	heuristics, parseErr := parseDocumentHeuristics(content)
+	classification, parseErr := parseDocumentHeuristics(content)
 	if parseErr == nil {
-		return heuristics, nil
+		return classification, nil
 	}
 
 	repairedContent, repairErr := c.client.ChatCompletion(ctx, buildDocumentHeuristicsRepairRequest(c.model, content))
 	if repairErr != nil {
-		return nil, fmt.Errorf("%w; repair request failed: %v", parseErr, repairErr)
+		return documentClassification{}, fmt.Errorf("%w; repair request failed: %v", parseErr, repairErr)
 	}
-	heuristics, repairErr = parseDocumentHeuristics(repairedContent)
+	classification, repairErr = parseDocumentHeuristics(repairedContent)
 	if repairErr != nil {
-		return nil, fmt.Errorf("%w; repair also failed: %v", parseErr, repairErr)
+		return documentClassification{}, fmt.Errorf("%w; repair also failed: %v", parseErr, repairErr)
 	}
-	return heuristics, nil
+	return classification, nil
 }
 
 func marshalCaseInputs(documents []classifiedInput, existingTopics []topicCandidate) (documentJSON, topicJSON string, err error) {

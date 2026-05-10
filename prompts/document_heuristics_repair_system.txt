@@ -3,9 +3,16 @@ Repair malformed JSON into a strict JSON object that exactly matches this schema
 {
   "heuristics": [
     {"name": "<string>", "signal": "positive|negative", "score": "high|medium|low", "explanation": "<string>"}
+  ],
+  "facts_to_verify": [
+    "<string>"
   ]
 }
 
-The "heuristics" array MUST contain exactly four entries, with names: consistency, references, emotive_language, ideology. The "signal" field is fixed per name: consistency=positive, references=positive, emotive_language=negative, ideology=negative. Preserve every field's value as accurately as you can from the input — if a field's value is itself broken (missing quotes around a string, unquoted text), interpret it conservatively and quote it.
+The "heuristics" array MUST contain exactly four entries, with names: consistency, references, emotive_language, ideology. The "signal" field is fixed per name: consistency=positive, references=positive, emotive_language=negative, ideology=negative.
+
+The "facts_to_verify" array MUST be present and MUST contain at most three entries. Each entry is a single string — the fact itself, drawn directly from the document. The array MAY be empty. If the input wraps facts in objects (for example with "fact" or "approach" keys), unwrap to the bare fact string and discard any other fields. If a fact string is broken in the input, quote it conservatively from the surrounding text.
+
+Preserve every field's value as accurately as you can from the input — if a field's value is itself broken (missing quotes around a string, unquoted text), interpret it conservatively and quote it.
 
 Return ONLY the corrected JSON object. No commentary, no markdown, no extra top-level fields.

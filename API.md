@@ -52,6 +52,7 @@ curl http://localhost:8080/api/v1/cases/1/topics/1/documents
 - **Topic** — a reusable grouping the service infers from submitted documents (e.g. "Financial irregularities"). Topic IDs are global within the running server process, so documents in a new case can be assigned to a topic created by an older case. Case endpoints return only topics represented in that case.
 - **Document** — one text file from the original submission. Each document belongs to exactly one topic.
 - **Heuristic** — a named graded assessment. Topic-level heuristics return `{ name, rating, description }` and are an **open** set. Document-level heuristics return `{ name, signal, rating, description }` and are a **closed** set of four (see [Document heuristics](#document-heuristics)).
+- **Fact to verify** — a concrete, externally checkable claim extracted from a single document. Surfaced as a plain string; the journalist decides how to verify it. Up to three per document, possibly fewer or none; see [Facts to verify](#facts-to-verify).
 
 ## Enumerations
 
@@ -73,6 +74,17 @@ The `/cases/{case_id}/topics/{topic_id}/documents` endpoint always returns this 
 The names and signals are stable. The `rating` and `description` are produced per document by the model.
 
 Document responses include `filtered`, a boolean derived only from negative-signal heuristics. `filtered` is `true` when every negative heuristic has a `rating` of `medium` or `high`; positive heuristics do not affect this flag. If any negative heuristic is `low`, or if there are no negative heuristics, `filtered` is `false`.
+
+## Facts to verify
+
+The same per-document analysis pass that produces document heuristics also isolates the most pertinent and externally verifiable facts in the document. Facts are surfaced as plain strings on `facts_to_verify`:
+
+- Each entry is a single fact statement drawn directly from the document text (names, dates, dollar amounts, identifiers, locations, organizations, or named events). The model is instructed not to invent or extrapolate.
+- Each entry is self-contained — readable without seeing the document.
+- The model selects at most three facts per document; the server caps the list at three even if a chatty model returns more. The array is always present and may be empty if no qualifying facts exist.
+- Verification approach is intentionally not surfaced — that's the journalist's call.
+
+`facts_to_verify` is intended as an investigator follow-up list, not as evidence quality scoring — it does not affect document `filtered` status or topic triage.
 
 ## Group heuristics
 
@@ -239,7 +251,7 @@ Topic detail with topic-level heuristics for this case. The `topic.id` is a glob
 
 The documents from this case that are assigned to the topic, with their raw content and per-document heuristics. Even when the topic ID exists in other cases, this endpoint returns only documents from `{case_id}`.
 
-Each document carries the closed set of four per-document heuristics described in [Document heuristics](#document-heuristics).
+Each document carries the closed set of four per-document heuristics described in [Document heuristics](#document-heuristics) and an open list of [facts to verify](#facts-to-verify).
 
 `filtered` indicates that the document's negative-signal heuristics all rated `medium` or `high`, so clients can exclude or de-emphasize it when presenting the topic group.
 
@@ -259,13 +271,18 @@ Each document carries the closed set of four per-document heuristics described i
         { "name": "references",             "signal": "positive", "rating": "medium", "description": "Names a vendor and an invoice number; no transaction IDs." },
         { "name": "emotive_language",       "signal": "negative", "rating": "low",    "description": "Tone is procedural; no inflammatory language." },
         { "name": "ideology", "signal": "negative", "rating": "low",    "description": "No agenda or personal incentives are evident." }
+      ],
+      "facts_to_verify": [
+        "Three off-cycle disbursements totalling $448,700 were processed in March–April 2025 to Atlas Holdings and Northbridge Consulting.",
+        "PO #84221 is recorded for the $212,000 Northbridge Consulting payment; the two Atlas Holdings payments have no PO on file.",
+        "Finance policy section 4.2 requires sign-off from two officers for these payments."
       ]
     }
   ]
 }
 ```
 
-`content` is the raw text of the document — render in a monospace/preformatted block to preserve whitespace and newlines.
+`content` is the raw text of the document — render in a monospace/preformatted block to preserve whitespace and newlines. `facts_to_verify` is always present but may be an empty array.
 
 **Errors:**
 - `404 case_not_found`, `404 topic_not_found`.
@@ -349,6 +366,7 @@ export interface DocumentRecord {
   content: string;
   filtered: boolean;
   heuristics: Heuristic[];
+  facts_to_verify: string[];
 }
 
 export interface TopicDocumentsResponse {

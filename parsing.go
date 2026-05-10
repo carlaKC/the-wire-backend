@@ -36,30 +36,50 @@ func parseClassificationContent(content string) (classificationReport, error) {
 }
 
 // parseDocumentHeuristics decodes a per-document heuristics response and maps
-// it into the wire-shape heuristic (score → Rating, explanation → Description).
-func parseDocumentHeuristics(content string) ([]heuristic, error) {
+// it into the wire shapes (score → Rating, explanation → Description for
+// heuristics; facts pass through). The facts_to_verify array may be empty or
+// missing — a per-document response with heuristics but no facts is valid.
+func parseDocumentHeuristics(content string) (documentClassification, error) {
 	data, err := extractJSONContent(content)
 	if err != nil {
-		return nil, fmt.Errorf("decode heuristics report: %w", err)
+		return documentClassification{}, fmt.Errorf("decode heuristics report: %w", err)
 	}
 	var report heuristicsReport
 	if err := json.Unmarshal(data, &report); err != nil {
-		return nil, fmt.Errorf("decode heuristics report: %w; %s", err, describeJSONFailure(string(data), err))
+		return documentClassification{}, fmt.Errorf("decode heuristics report: %w; %s", err, describeJSONFailure(string(data), err))
 	}
 	if len(report.Heuristics) == 0 {
-		return nil, errors.New("heuristics report contained no entries")
+		return documentClassification{}, errors.New("heuristics report contained no entries")
 	}
-	out := make([]heuristic, 0, len(report.Heuristics))
+	out := documentClassification{
+		Heuristics:    make([]heuristic, 0, len(report.Heuristics)),
+		FactsToVerify: make([]string, 0, len(report.FactsToVerify)),
+	}
 	for _, h := range report.Heuristics {
-		out = append(out, heuristic{
+		out.Heuristics = append(out.Heuristics, heuristic{
 			Name:        h.Name,
 			Signal:      h.Signal,
 			Rating:      h.Score,
 			Description: h.Explanation,
 		})
 	}
+	for _, f := range report.FactsToVerify {
+		fact := strings.TrimSpace(string(f))
+		if fact == "" {
+			continue
+		}
+		out.FactsToVerify = append(out.FactsToVerify, fact)
+		if len(out.FactsToVerify) == maxFactsToVerify {
+			break
+		}
+	}
 	return out, nil
 }
+
+// maxFactsToVerify caps the number of per-document facts surfaced to clients.
+// The prompt asks for at most three; truncating defensively keeps a chatty
+// model from flooding the response.
+const maxFactsToVerify = 3
 
 func extractJSONContent(content string) ([]byte, error) {
 	if strings.Contains(content, "电量不足，请充值后使用") {
