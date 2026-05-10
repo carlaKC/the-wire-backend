@@ -463,6 +463,16 @@ func TestParseDocumentHeuristicsRejectsEmptyHeuristics(t *testing.T) {
 	}
 }
 
+func TestParseDocumentHeuristicsTolerantOfMarkdownFences(t *testing.T) {
+	hs, err := parseDocumentHeuristics("```json\n" + `{"heuristics":[{"name":"consistency","signal":"positive","score":"high","explanation":"coherent"}]}` + "\n```")
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	if len(hs) != 1 || hs[0].Name != "consistency" {
+		t.Fatalf("hs = %#v", hs)
+	}
+}
+
 func TestRenderDocumentHeuristicsUserSubstitutes(t *testing.T) {
 	user := renderDocumentHeuristicsUser("HELLO WORLD")
 	if strings.Contains(user, documentTextPlaceholder) {

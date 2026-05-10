@@ -38,10 +38,13 @@ func parseClassificationContent(content string) (classificationReport, error) {
 // parseDocumentHeuristics decodes a per-document heuristics response and maps
 // it into the wire-shape heuristic (score → Rating, explanation → Description).
 func parseDocumentHeuristics(content string) ([]heuristic, error) {
+	data, err := extractJSONContent(content)
+	if err != nil {
+		return nil, fmt.Errorf("decode heuristics report: %w", err)
+	}
 	var report heuristicsReport
-	decoder := json.NewDecoder(strings.NewReader(content))
-	if err := decoder.Decode(&report); err != nil {
-		return nil, fmt.Errorf("decode heuristics report: %w; %s", err, describeJSONFailure(content, err))
+	if err := json.Unmarshal(data, &report); err != nil {
+		return nil, fmt.Errorf("decode heuristics report: %w; %s", err, describeJSONFailure(string(data), err))
 	}
 	if len(report.Heuristics) == 0 {
 		return nil, errors.New("heuristics report contained no entries")

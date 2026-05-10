@@ -105,11 +105,12 @@ func (c mapleClassifier) ClassifyGroup(ctx context.Context, documents []classifi
 }
 
 func parseGroupHeuristics(content string) ([]heuristic, error) {
-	if !json.Valid([]byte(content)) {
-		return nil, fmt.Errorf("model returned non-JSON content: %s", content)
+	data, err := extractJSONContent(content)
+	if err != nil {
+		return nil, fmt.Errorf("decode group heuristics report: %w", err)
 	}
 	var report heuristicsReport
-	if err := json.Unmarshal([]byte(content), &report); err != nil {
+	if err := json.Unmarshal(data, &report); err != nil {
 		return nil, fmt.Errorf("decode group heuristics report: %w", err)
 	}
 	if len(report.Heuristics) == 0 {
