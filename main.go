@@ -76,13 +76,17 @@ func main() {
 
 	switch {
 	case *useClaude:
+		apiKey := os.Getenv("ANTHROPIC_API_KEY")
+		if apiKey == "" {
+			log.Fatal("--claude requires ANTHROPIC_API_KEY to be set")
+		}
 		timeout := claudeTimeoutFromEnv()
 		model := envOrDefault("CLAUDE_MODEL", defaultClaudeModel)
 		baseURL := envOrDefault("CLAUDE_BASE_URL", defaultClaudeBaseURL)
 		log.Printf("claude client: timeout=%s base_url=%s model=%s", timeout, baseURL, model)
 		client := claudeClient{
 			baseURL:   baseURL,
-			apiKey:    os.Getenv("ANTHROPIC_API_KEY"),
+			apiKey:    apiKey,
 			model:     model,
 			maxTokens: claudeMaxTokensFromEnv(),
 			httpClient: &http.Client{
@@ -95,11 +99,15 @@ func main() {
 		}
 		registerMapleHandlers(mux, newMapleServer(classifier))
 	case *nomock:
+		apiKey := os.Getenv("MAPLE_API_KEY")
+		if apiKey == "" {
+			log.Fatal("--nomock requires MAPLE_API_KEY to be set")
+		}
 		timeout := mapleTimeoutFromEnv()
 		log.Printf("maple client: timeout=%s base_url=%s", timeout, envOrDefault("MAPLE_BASE_URL", defaultMapleBaseURL))
 		client := mapleClient{
 			baseURL: envOrDefault("MAPLE_BASE_URL", defaultMapleBaseURL),
-			apiKey:  os.Getenv("MAPLE_API_KEY"),
+			apiKey:  apiKey,
 			httpClient: &http.Client{
 				Timeout: timeout,
 			},
