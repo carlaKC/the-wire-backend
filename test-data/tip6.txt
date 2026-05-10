@@ -1,0 +1,18 @@
+TIP 6: Backdated subscription contracts at industrial IoT company
+CHANNEL: secure drop
+
+Lattice Telemetry, a publicly traded industrial IoT company headquartered in Austin, has been recording revenue in a way that I believe constitutes a violation of ASC 606 and likely securities fraud. I am writing because I have raised this internally three times — once with my direct supervisor, once with the controller, and once with the head of internal audit — and have been told each time that the practice has been reviewed and approved.
+
+I am a senior revenue accountant. I have been at Lattice since 2022.
+
+The pattern is this. In the final two weeks of each quarter, the sales organization closes a tranche of multi-year subscription contracts that include unusual "early start" clauses backdated to before quarter-end, sometimes by as much as eleven days. Customer counter-signatures on these contracts often arrive three to five business days into the following quarter, but the revenue is booked into the prior quarter on the strength of the backdated effective date. In Q2 2025 alone, I identified $14.3 million in revenue recognized this way, which represented approximately 7 percent of reported revenue for the quarter.
+
+The mechanism is enabled by a workflow our deal desk built in 2023, which allows contract effective dates to be set independently of execution dates. Internal Audit has reviewed this workflow, but only at the level of system controls, not the substance of the transactions flowing through it.
+
+I have:
+
+A spreadsheet of 41 contracts from Q4 2024 through Q2 2025 showing execution dates, effective dates, and the gap between them
+Email correspondence in which our VP of Sales instructs deal desk staff to "make the math work for the quarter" on three specific contracts
+The internal audit memo that approved the workflow
+
+I have not raised this externally before now. I am still employed at Lattice and would prefer to remain anonymous through any initial reporting. I understand that the SEC has a formal whistleblower program; my preference is that this be addressed through investigative reporting first, in part because I am not yet ready to put my name on a federal filing.

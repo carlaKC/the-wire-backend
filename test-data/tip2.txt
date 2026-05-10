@@ -1,0 +1,14 @@
+TIP 2: Pharma reclassification of cardiac adverse events pre-NDA
+CHANNEL: encrypted email
+
+This is a tip about Caldera Therapeutics, a mid-cap biotech headquartered in the Boston area. I work as a clinical data analyst on the Phase III program for vemorelibant, the company's lead candidate for moderate-to-severe atopic dermatitis. The drug is under FDA review with a PDUFA date in the third quarter of this year.
+
+What I want to report is that, beginning in approximately February 2025, the Executive Risk Committee — which includes our CEO Anita Korhonen, CMO Dr. Felipe Salgado, and General Counsel Brian Westmore — directed the safety team to reclassify a cluster of cardiac adverse events from the Phase III pivotal trial. Specifically, eleven cases that had originally been coded as "Grade 2 cardiac dysrhythmia, treatment-related" were re-coded as "Grade 1, treatment relationship indeterminate" in the database snapshot used for the NDA submission.
+
+I was in the room when this decision was made. The discussion lasted roughly forty minutes. Salgado argued initially against reclassification on the grounds that the temporal pattern was clear, but was overruled after Westmore raised concerns about labeling implications and the impact on the commercial forecast. Korhonen ultimately directed the change, with Westmore drafting language for the rationale that was inserted into the SAE narratives.
+
+I have access to both the original and the revised database snapshots. The case-level coding changes are documented. I also have the meeting calendar entries and an email chain in which Westmore circulates draft narrative language with the subject line "revised SAE rationales — for biostat review."
+
+The clinical relevance: at Grade 2 with attributed treatment relationship, the cluster would likely have triggered additional FDA queries and possibly a black-box warning. At Grade 1 with indeterminate causality, it falls below the threshold that would prompt either.
+
+I am willing to provide documents through a secure channel of your choosing.
