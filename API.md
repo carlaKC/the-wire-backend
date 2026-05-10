@@ -91,6 +91,9 @@ Current group heuristics are:
 | `shared_references` | positive | Concrete references recur across documents, enabling cross-checking. |
 | `coordinated_framing` | negative | Documents share suspiciously coordinated emotional framing or repeated rhetoric. |
 | `shared_agenda` | negative | Documents collectively appear to advance the same agenda, incentive, or vendetta rather than independent reporting. |
+| `contested_narrative` | positive | Documents contain competing accounts of the same core event, where one account may be framed to discredit another. This is a review-salience signal and does not affect document filtering. |
+| `timeline_coherence` | positive | Dates, time ranges, and event ordering form a plausible sequence across documents. |
+| `temporal_scope` | positive | The alleged conduct appears isolated, short-lived, or sustained/recurring over time. This is review context and does not affect document filtering. |
 
 Group heuristics are part of the open topic-level heuristic list. Clients should render any topic heuristic returned by the API and should not assume only these names will be present.
 

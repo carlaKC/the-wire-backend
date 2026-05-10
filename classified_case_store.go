@@ -434,6 +434,9 @@ func evidenceQuality(documents []documentResponse, topicHeuristics []heuristic) 
 		return "medium"
 	}
 	rating := ratingFromAverage(total, count)
+	if hasHighContestedNarrative(topicHeuristics) && !hasStrongGroupSupport(topicHeuristics) && rating == "high" {
+		rating = "medium"
+	}
 	if filtered == len(documents) && filtered > 0 {
 		return "low"
 	}
@@ -443,10 +446,31 @@ func evidenceQuality(documents []documentResponse, topicHeuristics []heuristic) 
 	return rating
 }
 
+func hasHighContestedNarrative(heuristics []heuristic) bool {
+	for _, h := range heuristics {
+		if normalizedTopic(h.Name) == "contested_narrative" && normalizedRating(h.Rating) == "high" {
+			return true
+		}
+	}
+	return false
+}
+
+func hasStrongGroupSupport(heuristics []heuristic) bool {
+	for _, h := range heuristics {
+		switch normalizedTopic(h.Name) {
+		case "corroboration", "shared_references":
+			if normalizedRating(h.Rating) == "high" {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 func evidenceQualityScore(h heuristic) (int, bool) {
 	name := normalizedTopic(h.Name)
 	switch name {
-	case "consistency", "references", "corroboration", "shared_references":
+	case "consistency", "references", "corroboration", "shared_references", "timeline_coherence":
 	case "emotive_language", "ideology_or_incentives", "coordinated_framing", "shared_agenda":
 	default:
 		return 0, false

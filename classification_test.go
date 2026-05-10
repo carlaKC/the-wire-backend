@@ -316,7 +316,10 @@ func TestMapleClassifierClassifyGroupReturnsParsedHeuristics(t *testing.T) {
 			{"name":"corroboration","signal":"positive","score":"high","explanation":"docs corroborate"},
 			{"name":"shared_references","signal":"positive","score":"medium","explanation":"some shared invoice ids"},
 			{"name":"coordinated_framing","signal":"negative","score":"low","explanation":"varied tone"},
-			{"name":"shared_agenda","signal":"negative","score":"low","explanation":"no shared agenda"}
+			{"name":"shared_agenda","signal":"negative","score":"low","explanation":"no shared agenda"},
+			{"name":"contested_narrative","signal":"positive","score":"high","explanation":"one document rebuts another"},
+			{"name":"timeline_coherence","signal":"positive","score":"medium","explanation":"dates mostly align"},
+			{"name":"temporal_scope","signal":"positive","score":"high","explanation":"pattern spans multiple quarters"}
 		]}`},
 	}
 	classifier := mapleClassifier{model: "group-model", client: completer}
@@ -328,8 +331,8 @@ func TestMapleClassifierClassifyGroupReturnsParsedHeuristics(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ClassifyGroup returned error: %v", err)
 	}
-	if len(hs) != 4 {
-		t.Fatalf("heuristics = %d, want 4", len(hs))
+	if len(hs) != 7 {
+		t.Fatalf("heuristics = %d, want 7", len(hs))
 	}
 
 	if len(completer.requests) != 1 {
@@ -354,12 +357,25 @@ func TestMapleClassifierClassifyGroupReturnsParsedHeuristics(t *testing.T) {
 			t.Errorf("rendered prompt missing %q", want)
 		}
 	}
+	for _, want := range []string{"contested_narrative", "review-salience signal", "not a reason to filter documents"} {
+		if !strings.Contains(prompt, want) {
+			t.Errorf("rendered prompt missing contested narrative guidance %q", want)
+		}
+	}
+	for _, want := range []string{"timeline_coherence", "temporal_scope", "sustained or recurring conduct", "single incident"} {
+		if !strings.Contains(prompt, want) {
+			t.Errorf("rendered prompt missing timeline guidance %q", want)
+		}
+	}
 
 	wantRating := map[string]string{
 		"corroboration":       "high",
 		"shared_references":   "medium",
 		"coordinated_framing": "low",
 		"shared_agenda":       "low",
+		"contested_narrative": "high",
+		"timeline_coherence":  "medium",
+		"temporal_scope":      "high",
 	}
 	for _, h := range hs {
 		if h.Rating != wantRating[h.Name] {

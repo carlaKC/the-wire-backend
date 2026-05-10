@@ -366,6 +366,9 @@ func TestProcessCaseRunsGroupScanForUnfilteredDocuments(t *testing.T) {
 	classifier.groupReport = []heuristic{
 		{Name: "corroboration", Signal: "positive", Rating: "high", Description: "docs corroborate"},
 		{Name: "shared_references", Signal: "positive", Rating: "medium", Description: "shared invoice ids"},
+		{Name: "contested_narrative", Signal: "positive", Rating: "high", Description: "one document rebuts another"},
+		{Name: "timeline_coherence", Signal: "positive", Rating: "medium", Description: "dates mostly align"},
+		{Name: "temporal_scope", Signal: "positive", Rating: "high", Description: "pattern spans multiple quarters"},
 	}
 	classifier.groupCalls = make(chan groupCall, 1)
 	srv := newMapleServer(classifier)
@@ -392,6 +395,15 @@ func TestProcessCaseRunsGroupScanForUnfilteredDocuments(t *testing.T) {
 	detail := getMapleTopic(t, srv, caseID, topicID)
 	if !containsTopicHeuristicNamed(detail.Topic.Heuristics, "corroboration") {
 		t.Errorf("topic heuristics missing group heuristic. got: %v", topicHeuristicNames(detail.Topic.Heuristics))
+	}
+	if !containsTopicHeuristicNamed(detail.Topic.Heuristics, "contested_narrative") {
+		t.Errorf("topic heuristics missing contested narrative heuristic. got: %v", topicHeuristicNames(detail.Topic.Heuristics))
+	}
+	if !containsTopicHeuristicNamed(detail.Topic.Heuristics, "timeline_coherence") {
+		t.Errorf("topic heuristics missing timeline coherence heuristic. got: %v", topicHeuristicNames(detail.Topic.Heuristics))
+	}
+	if !containsTopicHeuristicNamed(detail.Topic.Heuristics, "temporal_scope") {
+		t.Errorf("topic heuristics missing temporal scope heuristic. got: %v", topicHeuristicNames(detail.Topic.Heuristics))
 	}
 }
 

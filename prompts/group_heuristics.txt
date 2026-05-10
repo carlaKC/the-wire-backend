@@ -56,6 +56,33 @@ Scoring guidance:
 * medium: some evidence of a shared agenda or incentive across documents
 * low: documents do not share an obvious agenda; framing is independent and reporting-focused
 
+5. contested_narrative (signal: positive)
+   Definition: Assess whether the documents present competing accounts of the same core event, where one account appears framed to undermine, discredit, or delegitimize another account. This is a review-salience signal, not a reason to filter documents and not proof that any account is true.
+
+Scoring guidance:
+
+* high: directly competing accounts of the same core event, with one account framed to undermine, discredit, or delegitimize another
+* medium: meaningful competing accounts or credibility challenges, but intent or framing is ambiguous
+* low: no clear competing narrative, or only minor factual differences
+
+6. timeline_coherence (signal: positive)
+   Definition: Assess whether dates, time ranges, and event ordering across the documents form a plausible cross-document sequence.
+
+Scoring guidance:
+
+* high: dates and event ordering form a clear, plausible sequence across documents
+* medium: a partial timeline exists, but some dates or ordering are missing, vague, or mildly ambiguous
+* low: the timeline is unclear, impossible, or documents conflict on key event ordering
+
+7. temporal_scope (signal: positive)
+   Definition: Assess whether the alleged conduct appears to be a single event, a short sequence, or sustained/recurring conduct over time. This is a review-context signal, not evidence quality by itself.
+
+Scoring guidance:
+
+* high: sustained or recurring conduct over months or years, or repeated events across multiple reporting periods
+* medium: several related events over days or weeks, or a short but meaningful sequence
+* low: a single incident, unclear timing, or no meaningful time span
+
 Output requirements:
 
 * Return ONLY valid JSON
@@ -89,6 +116,24 @@ Required JSON schema:
       "name": "shared_agenda",
       "signal": "negative",
       "score": "low",
+      "explanation": "Short explanation grounded in the documents"
+    },
+    {
+      "name": "contested_narrative",
+      "signal": "positive",
+      "score": "low",
+      "explanation": "Short explanation grounded in the documents"
+    },
+    {
+      "name": "timeline_coherence",
+      "signal": "positive",
+      "score": "high",
+      "explanation": "Short explanation grounded in the documents"
+    },
+    {
+      "name": "temporal_scope",
+      "signal": "positive",
+      "score": "medium",
       "explanation": "Short explanation grounded in the documents"
     }
   ]

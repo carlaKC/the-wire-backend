@@ -274,6 +274,98 @@ func TestTopicTriageFallsBackToSensitivityWhenImportanceMissing(t *testing.T) {
 	}
 }
 
+func TestEvidenceQualityTreatsContestedNarrativeAsCautionNotFilter(t *testing.T) {
+	documents := []documentResponse{
+		{Heuristics: []heuristic{
+			{Name: "consistency", Signal: "positive", Rating: "high"},
+			{Name: "references", Signal: "positive", Rating: "high"},
+			{Name: "emotive_language", Signal: "negative", Rating: "low"},
+			{Name: "ideology_or_incentives", Signal: "negative", Rating: "low"},
+		}},
+		{Heuristics: []heuristic{
+			{Name: "consistency", Signal: "positive", Rating: "high"},
+			{Name: "references", Signal: "positive", Rating: "high"},
+			{Name: "emotive_language", Signal: "negative", Rating: "low"},
+			{Name: "ideology_or_incentives", Signal: "negative", Rating: "low"},
+		}},
+	}
+
+	got := evidenceQuality(documents, []heuristic{
+		{Name: "corroboration", Signal: "positive", Rating: "medium"},
+		{Name: "shared_references", Signal: "positive", Rating: "medium"},
+		{Name: "contested_narrative", Signal: "positive", Rating: "high"},
+	})
+	if got != "medium" {
+		t.Fatalf("evidenceQuality with high contested narrative and weak support = %q, want medium", got)
+	}
+
+	got = evidenceQuality(documents, []heuristic{
+		{Name: "corroboration", Signal: "positive", Rating: "high"},
+		{Name: "shared_references", Signal: "positive", Rating: "medium"},
+		{Name: "contested_narrative", Signal: "positive", Rating: "high"},
+	})
+	if got != "high" {
+		t.Fatalf("evidenceQuality with high contested narrative and strong support = %q, want high", got)
+	}
+}
+
+func TestContestedNarrativeDoesNotAffectDocumentFiltering(t *testing.T) {
+	got := shouldFilterDocument([]heuristic{
+		{Name: "contested_narrative", Signal: "positive", Rating: "high"},
+	})
+	if got {
+		t.Fatal("contested_narrative should not filter a document")
+	}
+}
+
+func TestTimelineHeuristicsEvidenceQualityAndFiltering(t *testing.T) {
+	documents := []documentResponse{
+		{Heuristics: []heuristic{
+			{Name: "consistency", Signal: "positive", Rating: "medium"},
+			{Name: "references", Signal: "positive", Rating: "medium"},
+			{Name: "emotive_language", Signal: "negative", Rating: "low"},
+			{Name: "ideology_or_incentives", Signal: "negative", Rating: "low"},
+		}},
+	}
+
+	got := evidenceQuality(documents, []heuristic{
+		{Name: "timeline_coherence", Signal: "positive", Rating: "high"},
+	})
+	if got != "high" {
+		t.Fatalf("evidenceQuality with high timeline coherence = %q, want high", got)
+	}
+
+	got = evidenceQuality(documents, []heuristic{
+		{Name: "timeline_coherence", Signal: "positive", Rating: "low"},
+	})
+	if got != "medium" {
+		t.Fatalf("evidenceQuality with low timeline coherence = %q, want medium", got)
+	}
+
+	neutralDocuments := []documentResponse{
+		{Heuristics: []heuristic{
+			{Name: "consistency", Signal: "positive", Rating: "medium"},
+			{Name: "references", Signal: "positive", Rating: "medium"},
+			{Name: "emotive_language", Signal: "negative", Rating: "medium"},
+			{Name: "ideology_or_incentives", Signal: "negative", Rating: "medium"},
+		}},
+	}
+
+	got = evidenceQuality(neutralDocuments, []heuristic{
+		{Name: "temporal_scope", Signal: "positive", Rating: "high"},
+	})
+	if got != "medium" {
+		t.Fatalf("evidenceQuality with temporal scope only = %q, want medium", got)
+	}
+
+	if shouldFilterDocument([]heuristic{
+		{Name: "timeline_coherence", Signal: "positive", Rating: "low"},
+		{Name: "temporal_scope", Signal: "positive", Rating: "high"},
+	}) {
+		t.Fatal("timeline heuristics should not filter a document")
+	}
+}
+
 func TestShouldFilterDocumentIgnoresPositiveHeuristics(t *testing.T) {
 	tests := []struct {
 		name       string
