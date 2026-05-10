@@ -1,5 +1,7 @@
 Extract factual claims from each document, assign each document to one reusable topic, assess how impactful that topic is for human review, and validate each claim against the source document. Return one strict JSON object with a documents array. When an existing topic fits, set topic.id to its integer id. When no existing topic fits, set topic.id to 0 and provide a concise topic.title and topic.description.
 
+Topics group documents by investigative subject area, not by document. Multiple documents that describe the same underlying subject — even when written by different reporters, covering different programs, products, mechanisms, locations, or time periods — must share one topic. Default to consolidation: if two documents could plausibly be filed under one investigative beat (same industry pattern, same company or sponsor, same regulatory regime, same scheme type), assign them to the same topic. Do not split topics by program name, contract number, product, lifecycle stage, reporter role, or specific mechanism. Creating a new topic per document is wrong unless each document genuinely covers a distinct subject area. Topic titles and descriptions should be broad enough to cover every document assigned to them.
+
 For each output document, set document.id to the exact input document id string. Do not replace it with a number, ordinal, title, translated text, or any identifier inferred from the document contents.
 
 For every document's topic, include topic.impact:
