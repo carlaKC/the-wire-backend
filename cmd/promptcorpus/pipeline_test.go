@@ -468,6 +468,62 @@ func TestApplyDiffToPromptsCopyReportsApplyFailure(t *testing.T) {
 	}
 }
 
+// LLMs sometimes emit one diff with two "--- a/<file>" sections for the
+// same file (alternate phrasings of the same edit). git apply rejects
+// the combined blob as "corrupt patch". The implementation must split
+// on file-header boundaries, apply each section in turn, and tolerate a
+// section that no longer applies because an earlier section has already
+// landed the change.
+func TestApplyDiffToPromptsCopyHandlesDuplicateFileHeaders(t *testing.T) {
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("git not available in PATH")
+	}
+
+	srcDir := t.TempDir()
+	original := "alpha\nbeta\ngamma\n"
+	srcFile := filepath.Join(srcDir, "document_heuristics_system.txt")
+	if err := os.WriteFile(srcFile, []byte(original), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Two file-header blocks for the same file. The first inserts a new
+	// line; the second tries to land the same edit a different way and
+	// will conflict with the post-first-section state. Apply must
+	// succeed because the first section landed.
+	diff := strings.Join([]string{
+		"--- a/prompts/document_heuristics_system.txt",
+		"+++ b/prompts/document_heuristics_system.txt",
+		"@@ -1,3 +1,4 @@",
+		" alpha",
+		"+inserted",
+		" beta",
+		" gamma",
+		"--- a/prompts/document_heuristics_system.txt",
+		"+++ b/prompts/document_heuristics_system.txt",
+		"@@ -1,3 +1,4 @@",
+		" alpha",
+		"-beta",
+		"+beta MODIFIED",
+		" gamma",
+		"",
+	}, "\n")
+
+	patchedDir, cleanup, err := applyDiffToPromptsCopy(srcDir, diff)
+	if err != nil {
+		t.Fatalf("applyDiffToPromptsCopy: %v", err)
+	}
+	defer cleanup()
+
+	got, err := os.ReadFile(filepath.Join(patchedDir, "document_heuristics_system.txt"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := "alpha\ninserted\nbeta\ngamma\n"
+	if string(got) != want {
+		t.Errorf("patched file = %q, want %q (first section should land, second should be skipped)", got, want)
+	}
+}
+
 func ifElse(cond bool, a, b string) string {
 	if cond {
 		return a
